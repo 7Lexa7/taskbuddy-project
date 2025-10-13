@@ -95,9 +95,9 @@ const AppPage = () => {
   };
 
   const priorityConfig = {
-    high: { label: 'Высокий', emoji: '🔴', color: 'bg-red-100 text-red-700 border-red-300' },
-    medium: { label: 'Средний', emoji: '🟡', color: 'bg-yellow-100 text-yellow-700 border-yellow-300' },
-    low: { label: 'Низкий', emoji: '🟢', color: 'bg-green-100 text-green-700 border-green-300' }
+    high: { label: 'Высокий', emoji: '🔴', color: 'bg-red-50 text-red-700 border-red-200' },
+    medium: { label: 'Средний', emoji: '🟡', color: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
+    low: { label: 'Низкий', emoji: '🟢', color: 'bg-green-50 text-green-700 border-green-200' }
   };
 
   const filteredTasks = tasks.filter(task => {
@@ -110,7 +110,7 @@ const AppPage = () => {
   });
   const allModeTasks = tasks.filter(task => task.mode === activeMode);
   const completedTasks = allModeTasks.filter(task => task.completed).length;
-  const totalTasks = filteredTasks.length;
+  const totalTasks = allModeTasks.length;
   const completionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
 
   const toggleTask = (id: string) => {
@@ -190,34 +190,35 @@ const AppPage = () => {
   const selectedDateTasks = date ? getTasksForDate(date) : [];
 
   return (
-    <div className="min-h-screen bg-background">
-      <nav className="border-b bg-card sticky top-0 z-50 backdrop-blur-sm">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50/30 via-background to-purple-50/30">
+      <nav className="border-b bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-sm">
         <div className="container mx-auto px-4 py-3 flex justify-between items-center">
           <div className="flex items-center gap-6">
             <button onClick={() => navigate('/')} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 flex items-center justify-center shadow-md">
                 <Icon name="CheckSquare" className="text-white" size={18} />
               </div>
-              <span className="text-xl font-bold">TaskBuddy</span>
+              <span className="text-xl font-bold gradient-text">TaskBuddy</span>
             </button>
             <div className="hidden md:flex gap-1">
-              <Button variant="ghost" size="sm" onClick={() => navigate('/app')}>
-                <Icon name="Home" className="mr-2" size={16} />
-                Главная
+              <Button variant="ghost" size="sm" className="gap-2" onClick={() => navigate('/app')}>
+                <Icon name="LayoutDashboard" size={16} />
+                Панель
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => navigate('/calendar')}>
-                <Icon name="Calendar" className="mr-2" size={16} />
+              <Button variant="ghost" size="sm" className="gap-2" onClick={() => navigate('/calendar')}>
+                <Icon name="Calendar" size={16} />
                 Календарь
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => navigate('/settings')}>
-                <Icon name="Settings" className="mr-2" size={16} />
+              <Button variant="ghost" size="sm" className="gap-2" onClick={() => navigate('/settings')}>
+                <Icon name="Settings" size={16} />
                 Настройки
               </Button>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/notifications')}>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="relative" onClick={() => navigate('/notifications')}>
               <Icon name="Bell" size={18} />
+              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
             </Button>
             <Button variant="ghost" size="icon" onClick={() => navigate('/profile')}>
               <Icon name="User" size={18} />
@@ -227,62 +228,84 @@ const AppPage = () => {
       </nav>
 
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Привет! 👋</h1>
-          <p className="text-muted-foreground">Сегодня отличный день для продуктивности</p>
+        <div className="mb-8 animate-fade-in">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold mb-2 flex items-center gap-3">
+                Привет! <span className="animate-bounce">👋</span>
+              </h1>
+              <p className="text-muted-foreground text-lg">Сегодня отличный день для продуктивности</p>
+            </div>
+            <Button size="lg" className="shadow-lg hidden md:flex" onClick={() => setAddDialogOpen(true)}>
+              <Icon name="Plus" className="mr-2" size={20} />
+              Новая задача
+            </Button>
+          </div>
         </div>
 
         <Tabs value={activeMode} onValueChange={(value) => setActiveMode(value as 'personal' | 'study')} className="mb-8">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
-            <TabsTrigger value="personal" className="gap-2">
-              <Icon name="Target" size={16} />
+          <TabsList className="grid w-full max-w-md grid-cols-2 h-12">
+            <TabsTrigger value="personal" className="gap-2 text-base">
+              <Icon name="Target" size={18} />
               Личные цели
             </TabsTrigger>
-            <TabsTrigger value="study" className="gap-2">
-              <Icon name="GraduationCap" size={16} />
+            <TabsTrigger value="study" className="gap-2 text-base">
+              <Icon name="GraduationCap" size={18} />
               Учёба
             </TabsTrigger>
           </TabsList>
         </Tabs>
 
         <div className="grid lg:grid-cols-3 gap-6 mb-8">
-          <Card>
+          <Card className="border-2 hover:shadow-lg transition-all animate-scale-in">
             <CardHeader className="pb-3">
-              <CardDescription>Выполнено задач</CardDescription>
-              <CardTitle className="text-3xl">{completedTasks}/{totalTasks}</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardDescription className="text-sm font-medium">Прогресс</CardDescription>
+                <Icon name="TrendingUp" size={16} className="text-green-600" />
+              </div>
+              <CardTitle className="text-4xl font-bold">{completedTasks}<span className="text-2xl text-muted-foreground">/{totalTasks}</span></CardTitle>
             </CardHeader>
             <CardContent>
-              <Progress value={completionRate} className="h-2" />
-              <p className="text-sm text-muted-foreground mt-2">{Math.round(completionRate)}% завершено</p>
+              <Progress value={completionRate} className="h-3 mb-3" />
+              <p className="text-sm text-muted-foreground font-medium">{Math.round(completionRate)}% выполнено</p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-2 hover:shadow-lg transition-all animate-scale-in" style={{animationDelay: '0.1s'}}>
             <CardHeader className="pb-3">
-              <CardDescription>Активных задач</CardDescription>
-              <CardTitle className="text-3xl">{totalTasks - completedTasks}</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardDescription className="text-sm font-medium">Активных</CardDescription>
+                <Icon name="ListTodo" size={16} className="text-blue-600" />
+              </div>
+              <CardTitle className="text-4xl font-bold">{totalTasks - completedTasks}</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex gap-2 flex-wrap mt-2">
+              <div className="flex gap-2 flex-wrap">
                 {Object.entries(getCategoryStats()).map(([cat, count]) => (
-                  <Badge key={cat} variant="secondary" className="gap-1">
+                  <Badge key={cat} variant="secondary" className="gap-1 text-xs">
                     <Icon name={categoryConfig[cat as keyof typeof categoryConfig].icon} size={12} />
                     {count}
                   </Badge>
                 ))}
+                {Object.keys(getCategoryStats()).length === 0 && (
+                  <span className="text-sm text-muted-foreground">Нет активных задач</span>
+                )}
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-2 hover:shadow-lg transition-all bg-gradient-to-br from-red-50 to-orange-50 animate-scale-in" style={{animationDelay: '0.2s'}}>
             <CardHeader className="pb-3">
-              <CardDescription>Срочных задач</CardDescription>
-              <CardTitle className="text-3xl text-red-600">
+              <div className="flex items-center justify-between">
+                <CardDescription className="text-sm font-medium">Срочных</CardDescription>
+                <Icon name="AlertCircle" size={16} className="text-red-600" />
+              </div>
+              <CardTitle className="text-4xl font-bold text-red-600">
                 {filteredTasks.filter(t => t.priority === 'high' && !t.completed).length}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground mt-2">
+              <p className="text-sm text-muted-foreground font-medium">
                 Требуют внимания сегодня
               </p>
             </CardContent>
@@ -291,13 +314,16 @@ const AppPage = () => {
 
         <div className="grid lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
-            <Card>
+            <Card className="border-2 shadow-lg">
               <CardHeader>
                 <div className="flex justify-between items-center mb-4">
-                  <CardTitle>Мои задачи</CardTitle>
-                  <Button size="sm" onClick={() => setAddDialogOpen(true)}>
+                  <CardTitle className="text-2xl flex items-center gap-2">
+                    <Icon name="ListChecks" size={24} />
+                    Мои задачи
+                  </CardTitle>
+                  <Button size="sm" className="shadow-md md:hidden" onClick={() => setAddDialogOpen(true)}>
                     <Icon name="Plus" className="mr-2" size={16} />
-                    Добавить задачу
+                    Добавить
                   </Button>
                 </div>
                 
@@ -310,7 +336,7 @@ const AppPage = () => {
                   <select 
                     value={filterStatus} 
                     onChange={(e) => setFilterStatus(e.target.value)}
-                    className="px-3 py-1.5 text-sm border rounded-md bg-background hover:bg-accent transition-colors cursor-pointer"
+                    className="px-3 py-1.5 text-sm border-2 rounded-lg bg-background hover:bg-accent transition-colors cursor-pointer font-medium"
                   >
                     <option value="all">Все задачи</option>
                     <option value="active">Активные</option>
@@ -320,7 +346,7 @@ const AppPage = () => {
                   <select 
                     value={filterPriority} 
                     onChange={(e) => setFilterPriority(e.target.value)}
-                    className="px-3 py-1.5 text-sm border rounded-md bg-background hover:bg-accent transition-colors cursor-pointer"
+                    className="px-3 py-1.5 text-sm border-2 rounded-lg bg-background hover:bg-accent transition-colors cursor-pointer font-medium"
                   >
                     <option value="all">Любой приоритет</option>
                     <option value="high">🔴 Высокий</option>
@@ -331,7 +357,7 @@ const AppPage = () => {
                   <select 
                     value={filterCategory} 
                     onChange={(e) => setFilterCategory(e.target.value)}
-                    className="px-3 py-1.5 text-sm border rounded-md bg-background hover:bg-accent transition-colors cursor-pointer"
+                    className="px-3 py-1.5 text-sm border-2 rounded-lg bg-background hover:bg-accent transition-colors cursor-pointer font-medium"
                   >
                     <option value="all">Все категории</option>
                     <option value="work">💼 Работа</option>
@@ -360,15 +386,15 @@ const AppPage = () => {
               </CardHeader>
               <CardContent>
                 {filteredTasks.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Icon name="Inbox" size={48} className="mx-auto text-muted-foreground mb-3" />
-                    <h3 className="font-semibold text-lg mb-2">Задач не найдено</h3>
-                    <p className="text-muted-foreground text-sm mb-4">
+                  <div className="text-center py-16">
+                    <Icon name="Inbox" size={64} className="mx-auto text-muted-foreground/50 mb-4" />
+                    <h3 className="font-semibold text-xl mb-2">Задач не найдено</h3>
+                    <p className="text-muted-foreground mb-6">
                       {(filterStatus !== 'all' || filterPriority !== 'all' || filterCategory !== 'all') 
                         ? 'Попробуйте изменить фильтры или создайте новую задачу'
                         : 'Создайте свою первую задачу, чтобы начать'}
                     </p>
-                    {(filterStatus !== 'all' || filterPriority !== 'all' || filterCategory !== 'all') && (
+                    {(filterStatus !== 'all' || filterPriority !== 'all' || filterCategory !== 'all') ? (
                       <Button 
                         variant="outline" 
                         onClick={() => {
@@ -379,6 +405,11 @@ const AppPage = () => {
                       >
                         <Icon name="X" size={16} className="mr-2" />
                         Сбросить фильтры
+                      </Button>
+                    ) : (
+                      <Button onClick={() => setAddDialogOpen(true)}>
+                        <Icon name="Plus" size={16} className="mr-2" />
+                        Создать задачу
                       </Button>
                     )}
                   </div>
@@ -392,8 +423,8 @@ const AppPage = () => {
                       .map((task) => (
                       <div
                         key={task.id}
-                        className={`p-4 rounded-lg border-2 transition-all hover:shadow-md ${
-                          task.completed ? 'bg-muted/50 opacity-60' : 'bg-card'
+                        className={`p-4 rounded-xl border-2 transition-all hover:shadow-md ${
+                          task.completed ? 'bg-muted/30 opacity-60' : 'bg-card hover:border-primary/20'
                         }`}
                       >
                         <div className="flex items-start gap-3">
@@ -405,7 +436,7 @@ const AppPage = () => {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-2 flex-wrap">
                               <h3
-                                className={`font-medium ${
+                                className={`font-semibold text-base ${
                                   task.completed ? 'line-through text-muted-foreground' : ''
                                 }`}
                               >
@@ -415,18 +446,18 @@ const AppPage = () => {
                             <div className="flex items-center gap-2 flex-wrap">
                               <Badge
                                 variant="outline"
-                                className={`${priorityConfig[task.priority].color} text-xs`}
+                                className={`${priorityConfig[task.priority].color} text-xs font-medium border-2`}
                               >
                                 {priorityConfig[task.priority].emoji} {priorityConfig[task.priority].label}
                               </Badge>
-                              <Badge variant="secondary" className="text-xs gap-1">
+                              <Badge variant="secondary" className="text-xs gap-1 font-medium">
                                 <Icon
                                   name={categoryConfig[task.category].icon}
                                   size={12}
                                 />
                                 {categoryConfig[task.category].label}
                               </Badge>
-                              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                              <span className="text-xs text-muted-foreground flex items-center gap-1 font-medium">
                                 <Icon name="Calendar" size={12} />
                                 {new Date(task.dueDate).toLocaleDateString('ru-RU', {
                                   day: 'numeric',
@@ -451,9 +482,12 @@ const AppPage = () => {
           </div>
 
           <div>
-            <Card>
+            <Card className="border-2 shadow-lg sticky top-24">
               <CardHeader>
-                <CardTitle>Календарь</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <Icon name="Calendar" size={20} />
+                  Календарь
+                </CardTitle>
                 <CardDescription>Выберите дату для просмотра задач</CardDescription>
               </CardHeader>
               <CardContent>
@@ -461,16 +495,19 @@ const AppPage = () => {
                   mode="single"
                   selected={date}
                   onSelect={setDate}
-                  className="rounded-md border"
+                  className="rounded-lg border-2"
                 />
                 {selectedDateTasks.length > 0 && (
-                  <div className="mt-4 space-y-2">
-                    <p className="text-sm font-medium">Задачи на выбранную дату:</p>
+                  <div className="mt-6 space-y-2">
+                    <p className="text-sm font-semibold mb-3 flex items-center gap-2">
+                      <Icon name="ListChecks" size={16} />
+                      Задачи на {date?.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}:
+                    </p>
                     {selectedDateTasks.map(task => (
-                      <div key={task.id} className="text-sm p-2 bg-muted rounded-md">
+                      <div key={task.id} className="text-sm p-3 bg-muted/50 rounded-lg border hover:bg-muted transition-colors">
                         <div className="flex items-center gap-2">
-                          {priorityConfig[task.priority].emoji}
-                          <span className={task.completed ? 'line-through text-muted-foreground' : ''}>
+                          <span className="text-base">{priorityConfig[task.priority].emoji}</span>
+                          <span className={`font-medium flex-1 ${task.completed ? 'line-through text-muted-foreground' : ''}`}>
                             {task.title}
                           </span>
                         </div>
