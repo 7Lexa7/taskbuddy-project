@@ -20,34 +20,35 @@ const Profile = () => {
   const completionRate = (stats.completedTasks / stats.totalTasks) * 100;
 
   return (
-    <div className="min-h-screen bg-background">
-      <nav className="border-b bg-card sticky top-0 z-50 backdrop-blur-sm">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50/30 via-background to-purple-50/30">
+      <nav className="border-b bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-sm">
         <div className="container mx-auto px-4 py-3 flex justify-between items-center">
           <div className="flex items-center gap-6">
             <button onClick={() => navigate('/')} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 flex items-center justify-center shadow-md">
                 <Icon name="CheckSquare" className="text-white" size={18} />
               </div>
-              <span className="text-xl font-bold">TaskBuddy</span>
+              <span className="text-xl font-bold gradient-text">TaskBuddy</span>
             </button>
             <div className="hidden md:flex gap-1">
-              <Button variant="ghost" size="sm" onClick={() => navigate('/app')}>
-                <Icon name="Home" className="mr-2" size={16} />
-                Главная
+              <Button variant="ghost" size="sm" className="gap-2" onClick={() => navigate('/app')}>
+                <Icon name="LayoutDashboard" size={16} />
+                Панель
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => navigate('/calendar')}>
-                <Icon name="Calendar" className="mr-2" size={16} />
+              <Button variant="ghost" size="sm" className="gap-2" onClick={() => navigate('/calendar')}>
+                <Icon name="Calendar" size={16} />
                 Календарь
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => navigate('/settings')}>
-                <Icon name="Settings" className="mr-2" size={16} />
+              <Button variant="ghost" size="sm" className="gap-2" onClick={() => navigate('/settings')}>
+                <Icon name="Settings" size={16} />
                 Настройки
               </Button>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/notifications')}>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="relative" onClick={() => navigate('/notifications')}>
               <Icon name="Bell" size={18} />
+              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
             </Button>
             <Button variant="ghost" size="icon" onClick={() => navigate('/profile')}>
               <Icon name="User" size={18} />
@@ -57,7 +58,7 @@ const Profile = () => {
       </nav>
 
       <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <Card className="mb-6">
+        <Card className="mb-6 border-2 shadow-lg animate-fade-in">
           <CardContent className="pt-6">
             <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
               <Avatar className="w-24 h-24">
@@ -93,7 +94,7 @@ const Profile = () => {
         </Card>
 
         <div className="grid md:grid-cols-2 gap-6 mb-6">
-          <Card>
+          <Card className="border-2 shadow-lg animate-scale-in">
             <CardHeader>
               <CardTitle>Статистика продуктивности</CardTitle>
               <CardDescription>Ваши достижения за всё время</CardDescription>
@@ -127,7 +128,7 @@ const Profile = () => {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-2 shadow-lg animate-scale-in" style={{animationDelay: '0.1s'}}>
             <CardHeader>
               <CardTitle>Достижения 🏆</CardTitle>
               <CardDescription>Ваши награды и успехи</CardDescription>
@@ -170,7 +171,7 @@ const Profile = () => {
           </Card>
         </div>
 
-        <Card>
+        <Card className="border-2 shadow-lg animate-scale-in" style={{animationDelay: '0.2s'}}>
           <CardHeader>
             <CardTitle>Активность по категориям</CardTitle>
             <CardDescription>Распределение ваших задач</CardDescription>
