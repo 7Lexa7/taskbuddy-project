@@ -29,6 +29,10 @@ const CalendarPage = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  
+  const [filterPriority, setFilterPriority] = useState<string>('all');
+  const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
 
   const [tasks, setTasks] = useState<Task[]>([
     {
@@ -161,7 +165,13 @@ const CalendarPage = () => {
   };
 
   const weekDates = getWeekDates();
-  const selectedDateTasks = date ? getTasksForDate(date) : [];
+  const selectedDateTasks = date ? getTasksForDate(date).filter(task => {
+    if (filterPriority !== 'all' && task.priority !== filterPriority) return false;
+    if (filterCategory !== 'all' && task.category !== filterCategory) return false;
+    if (filterStatus === 'completed' && !task.completed) return false;
+    if (filterStatus === 'active' && task.completed) return false;
+    return true;
+  }) : [];
 
   return (
     <div className="min-h-screen bg-background">
@@ -230,16 +240,92 @@ const CalendarPage = () => {
               <CardDescription>
                 {selectedDateTasks.length === 0 ? 'Нет задач' : `Всего задач: ${selectedDateTasks.length}`}
               </CardDescription>
+              
+              <div className="flex flex-wrap gap-2 pt-4 border-t mt-4">
+                <div className="flex items-center gap-2">
+                  <Icon name="Filter" size={16} className="text-muted-foreground" />
+                  <span className="text-sm font-medium text-muted-foreground">Фильтры:</span>
+                </div>
+                
+                <select 
+                  value={filterStatus} 
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="px-3 py-1.5 text-sm border rounded-md bg-background hover:bg-accent transition-colors cursor-pointer"
+                >
+                  <option value="all">Все задачи</option>
+                  <option value="active">Активные</option>
+                  <option value="completed">Выполненные</option>
+                </select>
+
+                <select 
+                  value={filterPriority} 
+                  onChange={(e) => setFilterPriority(e.target.value)}
+                  className="px-3 py-1.5 text-sm border rounded-md bg-background hover:bg-accent transition-colors cursor-pointer"
+                >
+                  <option value="all">Любой приоритет</option>
+                  <option value="high">🔴 Высокий</option>
+                  <option value="medium">🟡 Средний</option>
+                  <option value="low">🟢 Низкий</option>
+                </select>
+
+                <select 
+                  value={filterCategory} 
+                  onChange={(e) => setFilterCategory(e.target.value)}
+                  className="px-3 py-1.5 text-sm border rounded-md bg-background hover:bg-accent transition-colors cursor-pointer"
+                >
+                  <option value="all">Все категории</option>
+                  <option value="work">💼 Работа</option>
+                  <option value="study">🎓 Учёба</option>
+                  <option value="home">🏠 Дом</option>
+                  <option value="personal">👤 Личное</option>
+                  <option value="projects">📁 Проекты</option>
+                </select>
+
+                {(filterStatus !== 'all' || filterPriority !== 'all' || filterCategory !== 'all') && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => {
+                      setFilterStatus('all');
+                      setFilterPriority('all');
+                      setFilterCategory('all');
+                    }}
+                    className="text-xs"
+                  >
+                    <Icon name="X" size={14} className="mr-1" />
+                    Сбросить
+                  </Button>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               {selectedDateTasks.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  <Icon name="Calendar" size={48} className="mx-auto mb-4 opacity-50" />
-                  <p>Нет задач на эту дату</p>
-                  <Button className="mt-4" size="sm" onClick={() => setAddDialogOpen(true)}>
-                    <Icon name="Plus" className="mr-2" size={16} />
-                    Добавить задачу
-                  </Button>
+                  <Icon name="Inbox" size={48} className="mx-auto mb-4 opacity-50" />
+                  <p className="mb-2">
+                    {(filterStatus !== 'all' || filterPriority !== 'all' || filterCategory !== 'all') 
+                      ? 'Задач не найдено с выбранными фильтрами'
+                      : 'Нет задач на эту дату'}
+                  </p>
+                  {(filterStatus !== 'all' || filterPriority !== 'all' || filterCategory !== 'all') ? (
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        setFilterStatus('all');
+                        setFilterPriority('all');
+                        setFilterCategory('all');
+                      }}
+                    >
+                      <Icon name="X" size={16} className="mr-2" />
+                      Сбросить фильтры
+                    </Button>
+                  ) : (
+                    <Button className="mt-2" size="sm" onClick={() => setAddDialogOpen(true)}>
+                      <Icon name="Plus" className="mr-2" size={16} />
+                      Добавить задачу
+                    </Button>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-3">

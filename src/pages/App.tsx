@@ -34,6 +34,10 @@ const AppPage = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   
+  const [filterPriority, setFilterPriority] = useState<string>('all');
+  const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
+  
   const [tasks, setTasks] = useState<Task[]>([
     {
       id: '1',
@@ -96,8 +100,16 @@ const AppPage = () => {
     low: { label: 'Низкий', emoji: '🟢', color: 'bg-green-100 text-green-700 border-green-300' }
   };
 
-  const filteredTasks = tasks.filter(task => task.mode === activeMode);
-  const completedTasks = filteredTasks.filter(task => task.completed).length;
+  const filteredTasks = tasks.filter(task => {
+    if (task.mode !== activeMode) return false;
+    if (filterPriority !== 'all' && task.priority !== filterPriority) return false;
+    if (filterCategory !== 'all' && task.category !== filterCategory) return false;
+    if (filterStatus === 'completed' && !task.completed) return false;
+    if (filterStatus === 'active' && task.completed) return false;
+    return true;
+  });
+  const allModeTasks = tasks.filter(task => task.mode === activeMode);
+  const completedTasks = allModeTasks.filter(task => task.completed).length;
   const totalTasks = filteredTasks.length;
   const completionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
 
@@ -281,22 +293,103 @@ const AppPage = () => {
           <div className="lg:col-span-2">
             <Card>
               <CardHeader>
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center mb-4">
                   <CardTitle>Мои задачи</CardTitle>
                   <Button size="sm" onClick={() => setAddDialogOpen(true)}>
                     <Icon name="Plus" className="mr-2" size={16} />
                     Добавить задачу
                   </Button>
                 </div>
+                
+                <div className="flex flex-wrap gap-2 pt-4 border-t">
+                  <div className="flex items-center gap-2">
+                    <Icon name="Filter" size={16} className="text-muted-foreground" />
+                    <span className="text-sm font-medium text-muted-foreground">Фильтры:</span>
+                  </div>
+                  
+                  <select 
+                    value={filterStatus} 
+                    onChange={(e) => setFilterStatus(e.target.value)}
+                    className="px-3 py-1.5 text-sm border rounded-md bg-background hover:bg-accent transition-colors cursor-pointer"
+                  >
+                    <option value="all">Все задачи</option>
+                    <option value="active">Активные</option>
+                    <option value="completed">Выполненные</option>
+                  </select>
+
+                  <select 
+                    value={filterPriority} 
+                    onChange={(e) => setFilterPriority(e.target.value)}
+                    className="px-3 py-1.5 text-sm border rounded-md bg-background hover:bg-accent transition-colors cursor-pointer"
+                  >
+                    <option value="all">Любой приоритет</option>
+                    <option value="high">🔴 Высокий</option>
+                    <option value="medium">🟡 Средний</option>
+                    <option value="low">🟢 Низкий</option>
+                  </select>
+
+                  <select 
+                    value={filterCategory} 
+                    onChange={(e) => setFilterCategory(e.target.value)}
+                    className="px-3 py-1.5 text-sm border rounded-md bg-background hover:bg-accent transition-colors cursor-pointer"
+                  >
+                    <option value="all">Все категории</option>
+                    <option value="work">💼 Работа</option>
+                    <option value="study">🎓 Учёба</option>
+                    <option value="home">🏠 Дом</option>
+                    <option value="personal">👤 Личное</option>
+                    <option value="projects">📁 Проекты</option>
+                  </select>
+
+                  {(filterStatus !== 'all' || filterPriority !== 'all' || filterCategory !== 'all') && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => {
+                        setFilterStatus('all');
+                        setFilterPriority('all');
+                        setFilterCategory('all');
+                      }}
+                      className="text-xs"
+                    >
+                      <Icon name="X" size={14} className="mr-1" />
+                      Сбросить
+                    </Button>
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  {filteredTasks
-                    .sort((a, b) => {
-                      const priorityOrder = { high: 0, medium: 1, low: 2 };
-                      return priorityOrder[a.priority] - priorityOrder[b.priority];
-                    })
-                    .map((task) => (
+                {filteredTasks.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Icon name="Inbox" size={48} className="mx-auto text-muted-foreground mb-3" />
+                    <h3 className="font-semibold text-lg mb-2">Задач не найдено</h3>
+                    <p className="text-muted-foreground text-sm mb-4">
+                      {(filterStatus !== 'all' || filterPriority !== 'all' || filterCategory !== 'all') 
+                        ? 'Попробуйте изменить фильтры или создайте новую задачу'
+                        : 'Создайте свою первую задачу, чтобы начать'}
+                    </p>
+                    {(filterStatus !== 'all' || filterPriority !== 'all' || filterCategory !== 'all') && (
+                      <Button 
+                        variant="outline" 
+                        onClick={() => {
+                          setFilterStatus('all');
+                          setFilterPriority('all');
+                          setFilterCategory('all');
+                        }}
+                      >
+                        <Icon name="X" size={16} className="mr-2" />
+                        Сбросить фильтры
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {filteredTasks
+                      .sort((a, b) => {
+                        const priorityOrder = { high: 0, medium: 1, low: 2 };
+                        return priorityOrder[a.priority] - priorityOrder[b.priority];
+                      })
+                      .map((task) => (
                       <div
                         key={task.id}
                         className={`p-4 rounded-lg border-2 transition-all hover:shadow-md ${
@@ -351,7 +444,8 @@ const AppPage = () => {
                         </div>
                       </div>
                     ))}
-                </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
