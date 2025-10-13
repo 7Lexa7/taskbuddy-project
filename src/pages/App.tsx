@@ -8,6 +8,8 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calendar } from '@/components/ui/calendar';
 import Icon from '@/components/ui/icon';
 import { Checkbox } from '@/components/ui/checkbox';
+import AddTaskDialog from '@/components/AddTaskDialog';
+import { useToast } from '@/hooks/use-toast';
 
 interface Task {
   id: string;
@@ -21,8 +23,10 @@ interface Task {
 
 const AppPage = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [activeMode, setActiveMode] = useState<'personal' | 'study'>('personal');
   const [date, setDate] = useState<Date | undefined>(new Date());
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
   
   const [tasks, setTasks] = useState<Task[]>([
     {
@@ -95,6 +99,30 @@ const AppPage = () => {
     setTasks(tasks.map(task => 
       task.id === id ? { ...task, completed: !task.completed } : task
     ));
+  };
+
+  const handleAddTask = (newTask: {
+    title: string;
+    category: string;
+    priority: string;
+    dueDate: Date;
+    description: string;
+    mode: string;
+  }) => {
+    const task: Task = {
+      id: Date.now().toString(),
+      title: newTask.title,
+      category: newTask.category as Task['category'],
+      priority: newTask.priority as Task['priority'],
+      completed: false,
+      dueDate: newTask.dueDate.toISOString().split('T')[0],
+      mode: newTask.mode as Task['mode']
+    };
+    setTasks([...tasks, task]);
+    toast({
+      title: 'Задача создана! 🎉',
+      description: `"${task.title}" добавлена в ${task.mode === 'personal' ? 'Личные цели' : 'Учёбу'}`,
+    });
   };
 
   const getCategoryStats = () => {
@@ -219,7 +247,7 @@ const AppPage = () => {
               <CardHeader>
                 <div className="flex justify-between items-center">
                   <CardTitle>Мои задачи</CardTitle>
-                  <Button size="sm">
+                  <Button size="sm" onClick={() => setAddDialogOpen(true)}>
                     <Icon name="Plus" className="mr-2" size={16} />
                     Добавить задачу
                   </Button>
@@ -322,6 +350,13 @@ const AppPage = () => {
           </div>
         </div>
       </div>
+
+      <AddTaskDialog
+        open={addDialogOpen}
+        onOpenChange={setAddDialogOpen}
+        onAddTask={handleAddTask}
+        defaultMode={activeMode}
+      />
     </div>
   );
 };

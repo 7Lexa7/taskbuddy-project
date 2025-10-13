@@ -5,6 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Calendar } from '@/components/ui/calendar';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
+import AddTaskDialog from '@/components/AddTaskDialog';
+import { useToast } from '@/hooks/use-toast';
 
 interface Task {
   id: string;
@@ -13,20 +15,24 @@ interface Task {
   priority: 'high' | 'medium' | 'low';
   completed: boolean;
   dueDate: string;
+  mode: 'personal' | 'study';
 }
 
 const CalendarPage = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [date, setDate] = useState<Date | undefined>(new Date());
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
 
-  const tasks: Task[] = [
+  const [tasks, setTasks] = useState<Task[]>([
     {
       id: '1',
       title: 'Подготовить презентацию по математике',
       category: 'study',
       priority: 'high',
       completed: false,
-      dueDate: '2025-10-14'
+      dueDate: '2025-10-14',
+      mode: 'study'
     },
     {
       id: '2',
@@ -34,7 +40,8 @@ const CalendarPage = () => {
       category: 'projects',
       priority: 'high',
       completed: false,
-      dueDate: '2025-10-15'
+      dueDate: '2025-10-15',
+      mode: 'personal'
     },
     {
       id: '3',
@@ -42,7 +49,8 @@ const CalendarPage = () => {
       category: 'study',
       priority: 'medium',
       completed: true,
-      dueDate: '2025-10-13'
+      dueDate: '2025-10-13',
+      mode: 'study'
     },
     {
       id: '4',
@@ -50,7 +58,8 @@ const CalendarPage = () => {
       category: 'personal',
       priority: 'medium',
       completed: false,
-      dueDate: '2025-10-16'
+      dueDate: '2025-10-16',
+      mode: 'personal'
     },
     {
       id: '5',
@@ -58,9 +67,34 @@ const CalendarPage = () => {
       category: 'study',
       priority: 'high',
       completed: false,
-      dueDate: '2025-10-14'
+      dueDate: '2025-10-14',
+      mode: 'study'
     }
-  ];
+  ]);
+
+  const handleAddTask = (newTask: {
+    title: string;
+    category: string;
+    priority: string;
+    dueDate: Date;
+    description: string;
+    mode: string;
+  }) => {
+    const task: Task = {
+      id: Date.now().toString(),
+      title: newTask.title,
+      category: newTask.category as Task['category'],
+      priority: newTask.priority as Task['priority'],
+      completed: false,
+      dueDate: newTask.dueDate.toISOString().split('T')[0],
+      mode: newTask.mode as Task['mode']
+    };
+    setTasks([...tasks, task]);
+    toast({
+      title: 'Задача создана! 🎉',
+      description: `"${task.title}" добавлена на ${new Date(task.dueDate).toLocaleDateString('ru-RU')}`,
+    });
+  };
 
   const priorityConfig = {
     high: { label: 'Высокий', emoji: '🔴' },
@@ -160,7 +194,7 @@ const CalendarPage = () => {
                 <div className="text-center py-8 text-muted-foreground">
                   <Icon name="Calendar" size={48} className="mx-auto mb-4 opacity-50" />
                   <p>Нет задач на эту дату</p>
-                  <Button className="mt-4" size="sm">
+                  <Button className="mt-4" size="sm" onClick={() => setAddDialogOpen(true)}>
                     <Icon name="Plus" className="mr-2" size={16} />
                     Добавить задачу
                   </Button>
@@ -250,6 +284,13 @@ const CalendarPage = () => {
           </CardContent>
         </Card>
       </div>
+
+      <AddTaskDialog
+        open={addDialogOpen}
+        onOpenChange={setAddDialogOpen}
+        onAddTask={handleAddTask}
+        defaultMode="personal"
+      />
     </div>
   );
 };
