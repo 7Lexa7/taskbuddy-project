@@ -9,6 +9,9 @@ import { Calendar } from '@/components/ui/calendar';
 import Icon from '@/components/ui/icon';
 import { Checkbox } from '@/components/ui/checkbox';
 import AddTaskDialog from '@/components/AddTaskDialog';
+import EditTaskDialog from '@/components/EditTaskDialog';
+import DeleteTaskDialog from '@/components/DeleteTaskDialog';
+import TaskMenu from '@/components/TaskMenu';
 import { useToast } from '@/hooks/use-toast';
 
 interface Task {
@@ -27,6 +30,9 @@ const AppPage = () => {
   const [activeMode, setActiveMode] = useState<'personal' | 'study'>('personal');
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   
   const [tasks, setTasks] = useState<Task[]>([
     {
@@ -123,6 +129,36 @@ const AppPage = () => {
       title: 'Задача создана! 🎉',
       description: `"${task.title}" добавлена в ${task.mode === 'personal' ? 'Личные цели' : 'Учёбу'}`,
     });
+  };
+
+  const handleEditTask = (updatedTask: Task) => {
+    setTasks(tasks.map(task => task.id === updatedTask.id ? updatedTask : task));
+    toast({
+      title: 'Задача обновлена! ✏️',
+      description: `"${updatedTask.title}" успешно изменена`,
+    });
+  };
+
+  const handleDeleteTask = () => {
+    if (selectedTask) {
+      setTasks(tasks.filter(task => task.id !== selectedTask.id));
+      toast({
+        title: 'Задача удалена 🗑️',
+        description: `"${selectedTask.title}" удалена из списка`,
+      });
+      setDeleteDialogOpen(false);
+      setSelectedTask(null);
+    }
+  };
+
+  const openEditDialog = (task: Task) => {
+    setSelectedTask(task);
+    setEditDialogOpen(true);
+  };
+
+  const openDeleteDialog = (task: Task) => {
+    setSelectedTask(task);
+    setDeleteDialogOpen(true);
   };
 
   const getCategoryStats = () => {
@@ -306,9 +342,12 @@ const AppPage = () => {
                               </span>
                             </div>
                           </div>
-                          <Button variant="ghost" size="icon" className="shrink-0">
-                            <Icon name="MoreVertical" size={16} />
-                          </Button>
+                          <TaskMenu
+                            onEdit={() => openEditDialog(task)}
+                            onDelete={() => openDeleteDialog(task)}
+                            onToggleComplete={() => toggleTask(task.id)}
+                            isCompleted={task.completed}
+                          />
                         </div>
                       </div>
                     ))}
@@ -356,6 +395,20 @@ const AppPage = () => {
         onOpenChange={setAddDialogOpen}
         onAddTask={handleAddTask}
         defaultMode={activeMode}
+      />
+
+      <EditTaskDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        onEditTask={handleEditTask}
+        task={selectedTask}
+      />
+
+      <DeleteTaskDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onDeleteTask={handleDeleteTask}
+        task={selectedTask}
       />
     </div>
   );
