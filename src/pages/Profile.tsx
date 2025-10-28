@@ -202,68 +202,73 @@ const Profile = () => {
 
         <Card className="border-2 shadow-lg animate-scale-in" style={{animationDelay: '0.2s'}}>
           <CardHeader>
-            <CardTitle>Активность по категориям</CardTitle>
-            <CardDescription>Распределение ваших задач</CardDescription>
+            <CardTitle>Telegram уведомления</CardTitle>
+            <CardDescription>Получайте напоминания о задачах в Telegram</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div>
-                <div className="flex justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <Icon name="GraduationCap" size={16} className="text-purple-600" />
-                    <span className="text-sm font-medium">Учёба</span>
-                  </div>
-                  <span className="text-sm text-muted-foreground">18 задач</span>
+            {profile?.telegramChatId ? (
+              <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-lg">
+                <Icon name="CheckCircle2" className="text-green-600" size={24} />
+                <div className="flex-1">
+                  <p className="font-medium text-green-900">Telegram подключен</p>
+                  <p className="text-sm text-green-700">Вы получаете уведомления в Telegram</p>
                 </div>
-                <Progress value={38} className="h-2" />
               </div>
-
-              <div>
-                <div className="flex justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <Icon name="Folder" size={16} className="text-orange-600" />
-                    <span className="text-sm font-medium">Проекты</span>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <Icon name="Info" className="text-blue-600 mt-0.5" size={20} />
+                  <div className="flex-1">
+                    <p className="font-medium text-blue-900 mb-2">Как подключить уведомления:</p>
+                    <ol className="text-sm text-blue-700 space-y-1 list-decimal list-inside">
+                      <li>Нажмите на кнопку ниже</li>
+                      <li>Откроется Telegram бот TaskBuddy</li>
+                      <li>Нажмите "Start" в боте</li>
+                      <li>Готово! Уведомления подключены</li>
+                    </ol>
                   </div>
-                  <span className="text-sm text-muted-foreground">12 задач</span>
                 </div>
-                <Progress value={26} className="h-2" />
+                <Button 
+                  className="w-full gap-2" 
+                  onClick={() => {
+                    const botUrl = `https://t.me/taskbuddy_notifications_bot?start=${profile?.id || user?.id || 0}`;
+                    window.open(botUrl, '_blank');
+                  }}
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.295-.6.295-.002 0-.003 0-.005 0l.213-3.054 5.56-5.022c.24-.213-.054-.334-.373-.121l-6.869 4.326-2.96-.924c-.64-.203-.658-.64.135-.954l11.566-4.458c.538-.196 1.006.128.832.941z"/>
+                  </svg>
+                  Подключить Telegram
+                </Button>
               </div>
-
-              <div>
-                <div className="flex justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <Icon name="User" size={16} className="text-pink-600" />
-                    <span className="text-sm font-medium">Личное</span>
-                  </div>
-                  <span className="text-sm text-muted-foreground">10 задач</span>
-                </div>
-                <Progress value={21} className="h-2" />
-              </div>
-
-              <div>
-                <div className="flex justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <Icon name="Briefcase" size={16} className="text-blue-600" />
-                    <span className="text-sm font-medium">Работа</span>
-                  </div>
-                  <span className="text-sm text-muted-foreground">5 задач</span>
-                </div>
-                <Progress value={11} className="h-2" />
-              </div>
-
-              <div>
-                <div className="flex justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <Icon name="Home" size={16} className="text-green-600" />
-                    <span className="text-sm font-medium">Дом</span>
-                  </div>
-                  <span className="text-sm text-muted-foreground">2 задачи</span>
-                </div>
-                <Progress value={4} className="h-2" />
-              </div>
-            </div>
+            )}
           </CardContent>
         </Card>
+
+        {stats.totalTasks > 0 && (
+          <Card className="border-2 shadow-lg animate-scale-in mt-6" style={{animationDelay: '0.3s'}}>
+            <CardHeader>
+              <CardTitle>Информация об аккаунте</CardTitle>
+              <CardDescription>Дата регистрации и другие данные</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Icon name="Calendar" size={16} className="text-muted-foreground" />
+                  <span className="text-sm">Присоединились: {profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString('ru-RU') : 'Неизвестно'}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Icon name="Target" size={16} className="text-muted-foreground" />
+                  <span className="text-sm">Всего целей создано: {stats.totalTasks}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Icon name="CheckCircle2" size={16} className="text-green-600" />
+                  <span className="text-sm">Выполнено: {stats.completedTasks}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="mt-6 flex justify-center">
           <Button variant="outline" onClick={() => navigate('/login')}>

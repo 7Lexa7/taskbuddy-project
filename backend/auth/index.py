@@ -19,6 +19,36 @@ def hash_password(password: str) -> str:
 def generate_token() -> str:
     return secrets.token_urlsafe(32)
 
+def create_token(user_id: int, conn) -> str:
+    token = generate_token()
+    cur = conn.cursor()
+    try:
+        cur.execute(
+            "INSERT INTO tokens (user_id, token) VALUES (%s, %s)",
+            (user_id, token)
+        )
+        return token
+    finally:
+        cur.close()
+
+def get_user_from_token(token: str) -> Optional[int]:
+    if not token:
+        return None
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    try:
+        cur.execute(
+            "SELECT user_id FROM tokens WHERE token = %s AND expires_at > CURRENT_TIMESTAMP",
+            (token,)
+        )
+        result = cur.fetchone()
+        return result[0] if result else None
+    finally:
+        cur.close()
+        conn.close()
+
 def get_db_connection():
     dsn = os.environ.get('DATABASE_URL')
     return psycopg2.connect(dsn)
@@ -91,9 +121,8 @@ def register_user(event: Dict[str, Any]) -> Dict[str, Any]:
             (user_id, 'Добро пожаловать в TaskBuddy!', 'Вы успешно зарегистрировались. Начните создавать свои первые задачи!', 'success')
         )
         
+        token = create_token(user_id, conn)
         conn.commit()
-        
-        token = generate_token()
         
         return {
             'statusCode': 201,
@@ -150,7 +179,9 @@ def login_user(event: Dict[str, Any]) -> Dict[str, Any]:
                 'body': json.dumps({'error': 'Invalid email or password'})
             }
         
-        token = generate_token()
+        user_id = user[0]
+        token = create_token(user_id, conn)
+        conn.commit()
         
         return {
             'statusCode': 200,

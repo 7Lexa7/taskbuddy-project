@@ -18,7 +18,20 @@ def get_user_id_from_token(headers: Dict[str, str]) -> Optional[int]:
     token = headers.get('X-Auth-Token', '') or headers.get('x-auth-token', '')
     if not token:
         return None
-    return 1
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    try:
+        cur.execute(
+            "SELECT user_id FROM tokens WHERE token = %s AND expires_at > CURRENT_TIMESTAMP",
+            (token,)
+        )
+        result = cur.fetchone()
+        return result[0] if result else None
+    finally:
+        cur.close()
+        conn.close()
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     method: str = event.get('httpMethod', 'GET')
