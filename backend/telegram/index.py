@@ -102,7 +102,7 @@ def handle_webhook(update: Dict[str, Any]) -> Dict[str, Any]:
                 user_id = int(parts[1])
                 
                 cur.execute(
-                    "UPDATE users SET telegram_chat_id = %s WHERE id = %s",
+                    "UPDATE t_p59845625_taskbuddy_project.users SET telegram_chat_id = %s WHERE id = %s",
                     (chat_id, user_id)
                 )
                 conn.commit()

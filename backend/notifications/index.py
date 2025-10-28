@@ -26,7 +26,7 @@ def get_user_id_from_token(headers: Dict[str, str]) -> Optional[int]:
     
     try:
         cur.execute(
-            "SELECT user_id FROM tokens WHERE token = %s AND expires_at > CURRENT_TIMESTAMP",
+            "SELECT user_id FROM t_p59845625_taskbuddy_project.tokens WHERE token = %s AND expires_at > CURRENT_TIMESTAMP",
             (token,)
         )
         result = cur.fetchone()
@@ -115,7 +115,7 @@ def get_notifications(user_id: int) -> Dict[str, Any]:
     try:
         cur.execute(
             """SELECT id, title, message, type, is_read, created_at 
-               FROM notifications 
+               FROM t_p59845625_taskbuddy_project.notifications 
                WHERE user_id = %s 
                ORDER BY created_at DESC 
                LIMIT 50""",
@@ -164,7 +164,7 @@ def mark_as_read(event: Dict[str, Any], user_id: int) -> Dict[str, Any]:
     
     try:
         cur.execute(
-            "UPDATE notifications SET is_read = TRUE WHERE id = %s AND user_id = %s",
+            "UPDATE t_p59845625_taskbuddy_project.notifications SET is_read = TRUE WHERE id = %s AND user_id = %s",
             (notification_id, user_id)
         )
         conn.commit()
@@ -194,7 +194,7 @@ def delete_notification(event: Dict[str, Any], user_id: int) -> Dict[str, Any]:
     
     try:
         cur.execute(
-            "DELETE FROM notifications WHERE id = %s AND user_id = %s",
+            "DELETE FROM t_p59845625_taskbuddy_project.notifications WHERE id = %s AND user_id = %s",
             (notification_id, user_id)
         )
         conn.commit()
@@ -222,7 +222,7 @@ def get_settings(user_id: int) -> Dict[str, Any]:
     try:
         cur.execute(
             """SELECT notifications, email_notifications, telegram_notifications, reminder_time
-               FROM user_settings 
+               FROM t_p59845625_taskbuddy_project.user_settings 
                WHERE user_id = %s""",
             (user_id,)
         )
@@ -230,7 +230,7 @@ def get_settings(user_id: int) -> Dict[str, Any]:
         
         if not row:
             cur.execute(
-                """INSERT INTO user_settings (user_id) VALUES (%s)
+                """INSERT INTO t_p59845625_taskbuddy_project.user_settings (user_id) VALUES (%s)
                    RETURNING notifications, email_notifications, telegram_notifications, reminder_time""",
                 (user_id,)
             )
@@ -285,7 +285,7 @@ def update_settings(event: Dict[str, Any], user_id: int) -> Dict[str, Any]:
         
         params.append(user_id)
         
-        query = f"""UPDATE user_settings SET {', '.join(update_fields)} 
+        query = f"""UPDATE t_p59845625_taskbuddy_project.user_settings SET {', '.join(update_fields)} 
                    WHERE user_id = %s
                    RETURNING notifications, email_notifications, telegram_notifications, reminder_time"""
         
@@ -320,14 +320,14 @@ def check_and_send_reminders() -> Dict[str, Any]:
         tomorrow_str = tomorrow.strftime('%Y-%m-%d')
         
         cur.execute(
-            """SELECT g.id, g.title, g.end_date, g.user_id, u.name, u.telegram_chat_id, 
+            """SELECT g.id, g.title, g.end_date, g.user_id, u.username, u.telegram_chat_id, 
                       s.telegram_notifications
-               FROM goals g
-               JOIN users u ON g.user_id = u.id
-               JOIN user_settings s ON u.id = s.user_id
+               FROM t_p59845625_taskbuddy_project.goals g
+               JOIN t_p59845625_taskbuddy_project.users u ON g.user_id = u.id
+               LEFT JOIN t_p59845625_taskbuddy_project.user_settings s ON u.id = s.user_id
                WHERE g.status != 'completed'
-               AND g.end_date::date = %s
-               AND s.telegram_notifications = TRUE
+               AND g.due_date::date = %s
+               AND (s.telegram_notifications = TRUE OR s.telegram_notifications IS NULL)
                AND u.telegram_chat_id IS NOT NULL""",
             (tomorrow_str,)
         )
@@ -345,7 +345,7 @@ def check_and_send_reminders() -> Dict[str, Any]:
                 send_telegram_message(bot_token, chat_id, message)
                 
                 cur.execute(
-                    """INSERT INTO notifications (user_id, title, message, type, is_read) 
+                    """INSERT INTO t_p59845625_taskbuddy_project.notifications (user_id, title, message, type, is_read) 
                        VALUES (%s, %s, %s, %s, FALSE)""",
                     (user_id, 'Напоминание о дедлайне', 
                      f'Задача "{title}" должна быть завершена завтра', 'deadline_reminder')

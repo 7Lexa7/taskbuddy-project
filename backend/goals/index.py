@@ -20,8 +20,8 @@ def send_telegram_notification(user_id: int, message: str):
     try:
         cur.execute(
             """SELECT u.telegram_chat_id, COALESCE(s.telegram_notifications, TRUE) as tg_enabled
-               FROM users u
-               LEFT JOIN user_settings s ON u.id = s.user_id
+               FROM t_p59845625_taskbuddy_project.users u
+               LEFT JOIN t_p59845625_taskbuddy_project.user_settings s ON u.id = s.user_id
                WHERE u.id = %s""",
             (user_id,)
         )
@@ -55,7 +55,7 @@ def create_notification(user_id: int, title: str, message: str, notif_type: str)
     
     try:
         cur.execute(
-            """INSERT INTO notifications (user_id, title, message, type, is_read) 
+            """INSERT INTO t_p59845625_taskbuddy_project.notifications (user_id, title, message, type, is_read) 
                VALUES (%s, %s, %s, %s, FALSE)""",
             (user_id, title, message, notif_type)
         )
@@ -78,7 +78,7 @@ def get_user_id_from_token(headers: Dict[str, str]) -> Optional[int]:
     
     try:
         cur.execute(
-            "SELECT user_id FROM tokens WHERE token = %s AND expires_at > CURRENT_TIMESTAMP",
+            "SELECT user_id FROM t_p59845625_taskbuddy_project.tokens WHERE token = %s AND expires_at > CURRENT_TIMESTAMP",
             (token,)
         )
         result = cur.fetchone()
@@ -142,7 +142,7 @@ def get_goals(user_id: int) -> Dict[str, Any]:
         cur.execute(
             """SELECT id, title, description, category, priority, status, 
                start_date, end_date, progress, created_at, updated_at 
-               FROM goals WHERE user_id = %s ORDER BY created_at DESC""",
+               FROM t_p59845625_taskbuddy_project.goals WHERE user_id = %s ORDER BY created_at DESC""",
             (user_id,)
         )
         rows = cur.fetchall()
@@ -196,7 +196,7 @@ def create_goal(event: Dict[str, Any], user_id: int) -> Dict[str, Any]:
     
     try:
         cur.execute(
-            """INSERT INTO goals (user_id, title, description, category, priority, 
+            """INSERT INTO t_p59845625_taskbuddy_project.goals (user_id, title, description, category, priority, 
                status, start_date, end_date, progress) 
                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) 
                RETURNING id, title, description, category, priority, status, 
@@ -289,7 +289,7 @@ def update_goal(event: Dict[str, Any], user_id: int) -> Dict[str, Any]:
         
         params.extend([user_id, goal_id])
         
-        query = f"""UPDATE goals SET {', '.join(update_fields)} 
+        query = f"""UPDATE t_p59845625_taskbuddy_project.goals SET {', '.join(update_fields)} 
                    WHERE user_id = %s AND id = %s 
                    RETURNING id, title, description, category, priority, status, 
                    start_date, end_date, progress, created_at, updated_at"""
@@ -299,11 +299,16 @@ def update_goal(event: Dict[str, Any], user_id: int) -> Dict[str, Any]:
         conn.commit()
         
         if row and 'status' in body and body['status'] == 'completed':
+            task_title = row[1]
             create_notification(
                 user_id,
                 'Задача выполнена!',
-                f'Вы завершили задачу "{body.get("title", "")}"',
+                f'Вы завершили задачу "{task_title}"',
                 'task_completed'
+            )
+            send_telegram_notification(
+                user_id,
+                f'✅ <b>Задача выполнена!</b>\n\n🎉 Поздравляем! Вы завершили: <b>{task_title}</b>'
             )
         
         if not row:
@@ -352,7 +357,7 @@ def delete_goal(event: Dict[str, Any], user_id: int) -> Dict[str, Any]:
     
     try:
         cur.execute(
-            "SELECT id FROM goals WHERE user_id = %s AND id = %s",
+            "SELECT id FROM t_p59845625_taskbuddy_project.goals WHERE user_id = %s AND id = %s",
             (user_id, goal_id)
         )
         if not cur.fetchone():
@@ -363,7 +368,7 @@ def delete_goal(event: Dict[str, Any], user_id: int) -> Dict[str, Any]:
             }
         
         cur.execute(
-            "UPDATE goals SET status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE user_id = %s AND id = %s",
+            "UPDATE t_p59845625_taskbuddy_project.goals SET status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE user_id = %s AND id = %s",
             (user_id, goal_id)
         )
         conn.commit()

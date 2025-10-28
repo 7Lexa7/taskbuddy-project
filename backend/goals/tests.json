@@ -5,7 +5,7 @@
       "method": "GET",
       "path": "/",
       "headers": {
-        "X-Auth-Token": "test-token"
+        "X-Auth-Token": "g_pYRyE-HCs1a4GrcZoRb-FWijCYwNY60mGFA_T92w8"
       },
       "expectedStatus": 200
     },
@@ -14,7 +14,7 @@
       "method": "POST",
       "path": "/",
       "headers": {
-        "X-Auth-Token": "test-token"
+        "X-Auth-Token": "g_pYRyE-HCs1a4GrcZoRb-FWijCYwNY60mGFA_T92w8"
       },
       "body": {
         "title": "Test Goal",
