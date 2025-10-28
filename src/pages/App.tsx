@@ -52,17 +52,25 @@ const AppPage = () => {
     try {
       setLoading(true);
       const goals = await getGoals();
+      const validCategories = ['work', 'study', 'home', 'personal', 'projects'];
+      const validPriorities = ['high', 'medium', 'low'];
+      
       const mappedTasks: Task[] = goals
         .filter(goal => goal.status !== 'deleted')
-        .map(goal => ({
-          id: goal.id.toString(),
-          title: goal.title,
-          category: (goal.category || 'personal') as Task['category'],
-          priority: (goal.priority || 'medium') as Task['priority'],
-          completed: goal.status === 'completed',
-          dueDate: goal.endDate || new Date().toISOString().split('T')[0],
-          mode: 'personal' as Task['mode']
-        }));
+        .map(goal => {
+          const category = validCategories.includes(goal.category) ? goal.category : 'personal';
+          const priority = validPriorities.includes(goal.priority) ? goal.priority : 'medium';
+          
+          return {
+            id: goal.id.toString(),
+            title: goal.title,
+            category: category as Task['category'],
+            priority: priority as Task['priority'],
+            completed: goal.status === 'completed',
+            dueDate: goal.endDate || new Date().toISOString().split('T')[0],
+            mode: 'personal' as Task['mode']
+          };
+        });
       setTasks(mappedTasks);
     } catch (error) {
       toast({
