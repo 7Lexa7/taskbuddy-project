@@ -138,7 +138,11 @@ def get_notifications(user_id: int) -> Dict[str, Any]:
         
         return {
             'statusCode': 200,
-            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'headers': {
+                'Content-Type': 'application/json', 
+                'Access-Control-Allow-Origin': '*'
+            },
+            'isBase64Encoded': False,
             'body': json.dumps({
                 'notifications': notifications,
                 'unreadCount': unread_count

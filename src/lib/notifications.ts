@@ -24,7 +24,9 @@ export const getNotifications = async (): Promise<{ notifications: Notification[
   });
 
   if (!response.ok) {
-    throw new Error('Ошибка загрузки уведомлений');
+    const errorText = await response.text();
+    console.error('Notifications API error:', response.status, errorText);
+    throw new Error(`Ошибка загрузки уведомлений: ${response.status}`);
   }
 
   return response.json();

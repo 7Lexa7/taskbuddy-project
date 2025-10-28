@@ -35,11 +35,22 @@ const Notifications = () => {
       setNotifications(data.notifications);
       setUnreadCount(data.unreadCount);
     } catch (error) {
-      toast({
-        title: 'Ошибка',
-        description: 'Не удалось загрузить уведомления',
-        variant: 'destructive'
-      });
+      console.error('Failed to load notifications:', error);
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        toast({
+          title: 'Ошибка авторизации',
+          description: 'Необходимо войти в систему',
+          variant: 'destructive'
+        });
+        navigate('/login');
+      } else {
+        toast({
+          title: 'Ошибка',
+          description: 'Не удалось загрузить уведомления',
+          variant: 'destructive'
+        });
+      }
     } finally {
       setLoading(false);
     }
