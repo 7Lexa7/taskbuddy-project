@@ -1,20 +1,118 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Icon from '@/components/ui/icon';
 import { Separator } from '@/components/ui/separator';
+import { useToast } from '@/hooks/use-toast';
+
+const API_BASE = 'https://functions.poehali.dev';
 
 const Settings = () => {
   const navigate = useNavigate();
-  const [notifications, setNotifications] = useState(true);
-  const [emailNotifications, setEmailNotifications] = useState(false);
-  const [telegramNotifications, setTelegramNotifications] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  
+  const [settings, setSettings] = useState({
+    notifications: true,
+    emailNotifications: false,
+    telegramNotifications: true,
+    reminderTime: '1day'
+  });
+
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE}/867eda63-4bc6-4dc2-be1c-296913159724?action=settings`, {
+        headers: { 'X-Auth-Token': token }
+      });
+
+      if (!response.ok) throw new Error('Failed to load settings');
+
+      const data = await response.json();
+      setSettings({
+        notifications: data.notifications ?? true,
+        emailNotifications: data.emailNotifications ?? false,
+        telegramNotifications: data.telegramNotifications ?? true,
+        reminderTime: data.reminderTime ?? '1day'
+      });
+    } catch (error) {
+      console.error('Error loading settings:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const saveSettings = async (key: string, value: any) => {
+    const token = localStorage.getItem('authToken');
+    if (!token) return;
+
+    setSaving(true);
+    try {
+      const response = await fetch(`${API_BASE}/867eda63-4bc6-4dc2-be1c-296913159724?action=settings`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Auth-Token': token
+        },
+        body: JSON.stringify({ [key]: value })
+      });
+
+      if (!response.ok) throw new Error('Failed to save settings');
+
+      toast({
+        title: 'Настройки сохранены',
+        description: 'Изменения применены успешно'
+      });
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось сохранить настройки',
+        variant: 'destructive'
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSwitchChange = (key: string, value: boolean) => {
+    setSettings(prev => ({ ...prev, [key]: value }));
+    saveSettings(key, value);
+  };
+
+  const handleSelectChange = (key: string, value: string) => {
+    setSettings(prev => ({ ...prev, [key]: value }));
+    saveSettings(key, value);
+  };
+
+  const connectTelegram = () => {
+    const userId = localStorage.getItem('userId');
+    if (userId) {
+      window.open(`https://t.me/YourTaskBuddyBot?start=${userId}`, '_blank');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50/30 via-background to-purple-50/30">
@@ -45,7 +143,6 @@ const Settings = () => {
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="relative" onClick={() => navigate('/notifications')}>
               <Icon name="Bell" size={18} />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
             </Button>
             <Button variant="ghost" size="icon" onClick={() => navigate('/profile')}>
               <Icon name="User" size={18} />
@@ -79,8 +176,9 @@ const Settings = () => {
                 </div>
                 <Switch
                   id="notifications"
-                  checked={notifications}
-                  onCheckedChange={setNotifications}
+                  checked={settings.notifications}
+                  onCheckedChange={(v) => handleSwitchChange('notifications', v)}
+                  disabled={saving}
                 />
               </div>
 
@@ -95,24 +193,21 @@ const Settings = () => {
                 </div>
                 <Switch
                   id="telegram"
-                  checked={telegramNotifications}
-                  onCheckedChange={setTelegramNotifications}
-                  disabled={!notifications}
+                  checked={settings.telegramNotifications}
+                  onCheckedChange={(v) => handleSwitchChange('telegramNotifications', v)}
+                  disabled={!settings.notifications || saving}
                 />
               </div>
 
-              {telegramNotifications && (
-                <div className="pl-4 space-y-2">
-                  <Label htmlFor="telegram-username">Telegram Username</Label>
-                  <Input
-                    id="telegram-username"
-                    placeholder="@username"
-                    defaultValue="@username"
-                  />
-                  <Button variant="outline" size="sm">
-                    <Icon name="Link" className="mr-2" size={14} />
-                    Подключить бота
+              {settings.telegramNotifications && (
+                <div className="pl-4">
+                  <Button variant="outline" size="sm" onClick={connectTelegram}>
+                    <Icon name="MessageCircle" className="mr-2" size={14} />
+                    Подключить Telegram бота
                   </Button>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Нажмите, чтобы открыть бота и подключить уведомления
+                  </p>
                 </div>
               )}
 
@@ -127,9 +222,9 @@ const Settings = () => {
                 </div>
                 <Switch
                   id="email"
-                  checked={emailNotifications}
-                  onCheckedChange={setEmailNotifications}
-                  disabled={!notifications}
+                  checked={settings.emailNotifications}
+                  onCheckedChange={(v) => handleSwitchChange('emailNotifications', v)}
+                  disabled={!settings.notifications || saving}
                 />
               </div>
 
@@ -137,7 +232,11 @@ const Settings = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="reminder-time">Время напоминаний по умолчанию</Label>
-                <Select defaultValue="1hour">
+                <Select 
+                  value={settings.reminderTime} 
+                  onValueChange={(v) => handleSelectChange('reminderTime', v)}
+                  disabled={saving}
+                >
                   <SelectTrigger id="reminder-time">
                     <SelectValue placeholder="Выберите время" />
                   </SelectTrigger>
@@ -152,115 +251,6 @@ const Settings = () => {
               </div>
             </CardContent>
           </Card>
-
-          <Card className="border-2 shadow-lg animate-scale-in" style={{animationDelay: '0.1s'}}>
-            <CardHeader>
-              <CardTitle>Внешний вид</CardTitle>
-              <CardDescription>Настройте тему и оформление интерфейса</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="dark-mode" className="text-base">Тёмная тема 🌙</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Переключить на тёмное оформление
-                  </p>
-                </div>
-                <Switch
-                  id="dark-mode"
-                  checked={darkMode}
-                  onCheckedChange={setDarkMode}
-                />
-              </div>
-
-              <Separator />
-
-              <div className="space-y-2">
-                <Label htmlFor="accent-color">Акцентный цвет</Label>
-                <Select defaultValue="blue">
-                  <SelectTrigger id="accent-color">
-                    <SelectValue placeholder="Выберите цвет" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="blue">🔵 Синий</SelectItem>
-                    <SelectItem value="purple">🟣 Фиолетовый</SelectItem>
-                    <SelectItem value="green">🟢 Зелёный</SelectItem>
-                    <SelectItem value="orange">🟠 Оранжевый</SelectItem>
-                    <SelectItem value="pink">🩷 Розовый</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-2 shadow-lg animate-scale-in" style={{animationDelay: '0.2s'}}>
-            <CardHeader>
-              <CardTitle>Категории</CardTitle>
-              <CardDescription>Управляйте категориями задач</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <Icon name="Briefcase" size={20} className="text-blue-600" />
-                    <span className="font-medium">Работа</span>
-                  </div>
-                  <Button variant="ghost" size="sm">
-                    <Icon name="Settings" size={16} />
-                  </Button>
-                </div>
-                <div className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <Icon name="GraduationCap" size={20} className="text-purple-600" />
-                    <span className="font-medium">Учёба</span>
-                  </div>
-                  <Button variant="ghost" size="sm">
-                    <Icon name="Settings" size={16} />
-                  </Button>
-                </div>
-                <div className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <Icon name="Home" size={20} className="text-green-600" />
-                    <span className="font-medium">Дом</span>
-                  </div>
-                  <Button variant="ghost" size="sm">
-                    <Icon name="Settings" size={16} />
-                  </Button>
-                </div>
-                <Button variant="outline" className="w-full">
-                  <Icon name="Plus" className="mr-2" size={16} />
-                  Добавить категорию
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-2 shadow-lg bg-red-50/50 animate-scale-in" style={{animationDelay: '0.3s'}}>
-            <CardHeader>
-              <CardTitle className="text-red-600 flex items-center gap-2">
-                <Icon name="AlertTriangle" size={20} />
-                Опасная зона
-              </CardTitle>
-              <CardDescription>Необратимые действия с вашим аккаунтом</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Button variant="outline" className="w-full">
-                Экспорт данных
-              </Button>
-              <Button variant="destructive" className="w-full">
-                Удалить аккаунт
-              </Button>
-            </CardContent>
-          </Card>
-
-          <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={() => navigate('/app')}>
-              Отмена
-            </Button>
-            <Button>
-              Сохранить изменения
-            </Button>
-          </div>
         </div>
       </div>
     </div>

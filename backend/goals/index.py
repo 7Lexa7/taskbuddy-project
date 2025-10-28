@@ -11,6 +11,22 @@ import psycopg2
 from typing import Dict, Any, Optional, List
 from datetime import datetime
 
+def create_notification(user_id: int, title: str, message: str, notif_type: str):
+    """Helper function to create notification for user"""
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    try:
+        cur.execute(
+            """INSERT INTO notifications (user_id, title, message, type, is_read) 
+               VALUES (%s, %s, %s, %s, FALSE)""",
+            (user_id, title, message, notif_type)
+        )
+        conn.commit()
+    finally:
+        cur.close()
+        conn.close()
+
 def get_db_connection():
     dsn = os.environ.get('DATABASE_URL')
     return psycopg2.connect(dsn)
@@ -154,6 +170,13 @@ def create_goal(event: Dict[str, Any], user_id: int) -> Dict[str, Any]:
         row = cur.fetchone()
         conn.commit()
         
+        create_notification(
+            user_id,
+            'Новая задача добавлена',
+            f'Задача "{title}" успешно создана',
+            'task_created'
+        )
+        
         goal = {
             'id': row[0],
             'title': row[1],
@@ -232,6 +255,14 @@ def update_goal(event: Dict[str, Any], user_id: int) -> Dict[str, Any]:
         cur.execute(query, params)
         row = cur.fetchone()
         conn.commit()
+        
+        if row and 'status' in body and body['status'] == 'completed':
+            create_notification(
+                user_id,
+                'Задача выполнена!',
+                f'Вы завершили задачу "{body.get("title", "")}"',
+                'task_completed'
+            )
         
         if not row:
             return {

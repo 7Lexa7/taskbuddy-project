@@ -79,8 +79,13 @@ const Notifications = () => {
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
+      case 'deadline_reminder':
       case 'deadline':
         return { icon: 'AlertCircle' as const, color: 'text-red-600' };
+      case 'task_completed':
+        return { icon: 'CheckCircle' as const, color: 'text-green-600' };
+      case 'task_created':
+        return { icon: 'Plus' as const, color: 'text-blue-600' };
       case 'reminder':
         return { icon: 'Bell' as const, color: 'text-blue-600' };
       case 'achievement':
