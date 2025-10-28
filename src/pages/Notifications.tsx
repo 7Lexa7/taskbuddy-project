@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Icon from '@/components/ui/icon';
-import { getNotifications, markAsRead as markAsReadAPI, Notification as APINotification } from '@/lib/notifications';
+import { getNotifications, markAsRead as markAsReadAPI, deleteNotification as deleteNotificationAPI, Notification as APINotification } from '@/lib/notifications';
 import { useToast } from '@/hooks/use-toast';
 
 interface Notification {
@@ -74,7 +74,20 @@ const Notifications = () => {
   };
 
   const deleteNotification = async (id: number) => {
-    await markAsRead(id);
+    try {
+      await deleteNotificationAPI(id);
+      await loadNotifications();
+      toast({
+        title: 'Удалено',
+        description: 'Уведомление успешно удалено'
+      });
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось удалить уведомление',
+        variant: 'destructive'
+      });
+    }
   };
 
   const getNotificationIcon = (type: string) => {
@@ -99,16 +112,16 @@ const Notifications = () => {
   };
 
   const getTimeAgo = (dateStr: string) => {
-    const date = new Date(dateStr);
+    const date = new Date(dateStr + 'Z');
     const now = new Date();
     const diff = now.getTime() - date.getTime();
     const minutes = Math.floor(diff / 60000);
     const hours = Math.floor(minutes / 60);
     const days = Math.floor(hours / 24);
     
-    if (days > 0) return `${days} ${days === 1 ? 'день' : 'дня'} назад`;
-    if (hours > 0) return `${hours} ${hours === 1 ? 'час' : 'часа'} назад`;
-    if (minutes > 0) return `${minutes} ${minutes === 1 ? 'минуту' : 'минут'} назад`;
+    if (days > 0) return `${days} ${days === 1 ? 'день' : days <= 4 ? 'дня' : 'дней'} назад`;
+    if (hours > 0) return `${hours} ${hours === 1 ? 'час' : hours <= 4 ? 'часа' : 'часов'} назад`;
+    if (minutes > 0) return `${minutes} ${minutes === 1 ? 'минуту' : minutes <= 4 ? 'минуты' : 'минут'} назад`;
     return 'Только что';
   };
 

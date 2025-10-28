@@ -45,7 +45,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'statusCode': 200,
             'headers': {
                 'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
+                'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
                 'Access-Control-Allow-Headers': 'Content-Type, X-Auth-Token',
                 'Access-Control-Max-Age': '86400'
             },
@@ -93,6 +93,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             return get_notifications(user_id)
         elif method == 'PUT':
             return mark_as_read(event, user_id)
+        elif method == 'DELETE':
+            return delete_notification(event, user_id)
         else:
             return {
                 'statusCode': 405,
@@ -166,6 +168,43 @@ def mark_as_read(event: Dict[str, Any], user_id: int) -> Dict[str, Any]:
             (notification_id, user_id)
         )
         conn.commit()
+        
+        return {
+            'statusCode': 200,
+            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'success': True})
+        }
+    finally:
+        cur.close()
+        conn.close()
+
+def delete_notification(event: Dict[str, Any], user_id: int) -> Dict[str, Any]:
+    params = event.get('queryStringParameters', {})
+    notification_id = params.get('id')
+    
+    if not notification_id:
+        return {
+            'statusCode': 400,
+            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'error': 'Notification ID is required'})
+        }
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    try:
+        cur.execute(
+            "DELETE FROM notifications WHERE id = %s AND user_id = %s",
+            (notification_id, user_id)
+        )
+        conn.commit()
+        
+        if cur.rowcount == 0:
+            return {
+                'statusCode': 404,
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Notification not found'})
+            }
         
         return {
             'statusCode': 200,

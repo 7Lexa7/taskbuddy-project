@@ -41,3 +41,14 @@ export const markAsRead = async (id: number): Promise<void> => {
     throw new Error('Ошибка обновления уведомления');
   }
 };
+
+export const deleteNotification = async (id: number): Promise<void> => {
+  const response = await fetch(`${NOTIFICATIONS_API_URL}?id=${id}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    throw new Error('Ошибка удаления уведомления');
+  }
+};

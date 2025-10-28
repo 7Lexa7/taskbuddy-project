@@ -156,9 +156,7 @@ const AppPage = () => {
         priority: goal.priority as Task['priority'],
         completed: false,
         dueDate: goal.endDate || new Date().toISOString().split('T')[0],
-        mode: (newTask.category === 'work' ? 'work' : 
-               newTask.category === 'study' ? 'study' : 
-               'personal') as Task['mode']
+        mode: newTask.mode as Task['mode']
       };
       
       setTasks([...tasks, task]);
