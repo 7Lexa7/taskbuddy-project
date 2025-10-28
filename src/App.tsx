@@ -10,7 +10,6 @@ import Register from "./pages/Register";
 import AppPage from "./pages/App";
 import CalendarPage from "./pages/CalendarPage";
 import Profile from "./pages/Profile";
-import Notifications from "./pages/Notifications";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -29,7 +28,6 @@ const App = () => (
           <Route path="/app" element={<ProtectedRoute><AppPage /></ProtectedRoute>} />
           <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-          <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -247,9 +247,6 @@ const CalendarPage = () => {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/notifications')}>
-              <Icon name="Bell" size={18} />
-            </Button>
             <Button variant="ghost" size="icon" onClick={() => navigate('/profile')}>
               <Icon name="User" size={18} />
             </Button>

@@ -273,10 +273,6 @@ const AppPage = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="relative" onClick={() => navigate('/notifications')}>
-              <Icon name="Bell" size={18} />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-            </Button>
             <Button variant="ghost" size="icon" onClick={() => navigate('/profile')}>
               <Icon name="User" size={18} />
             </Button>
