@@ -156,7 +156,9 @@ const AppPage = () => {
         priority: goal.priority as Task['priority'],
         completed: false,
         dueDate: goal.endDate || new Date().toISOString().split('T')[0],
-        mode: 'personal' as Task['mode']
+        mode: (newTask.category === 'work' ? 'work' : 
+               newTask.category === 'study' ? 'study' : 
+               'personal') as Task['mode']
       };
       
       setTasks([...tasks, task]);
@@ -264,10 +266,6 @@ const AppPage = () => {
               <Button variant="ghost" size="sm" className="gap-2" onClick={() => navigate('/calendar')}>
                 <Icon name="Calendar" size={16} />
                 Календарь
-              </Button>
-              <Button variant="ghost" size="sm" className="gap-2" onClick={() => navigate('/settings')}>
-                <Icon name="Settings" size={16} />
-                Настройки
               </Button>
             </div>
           </div>

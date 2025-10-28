@@ -90,15 +90,7 @@ const Profile = () => {
                 <Icon name="Calendar" size={16} />
                 Календарь
               </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="gap-2"
-                onClick={() => navigate("/settings")}
-              >
-                <Icon name="Settings" size={16} />
-                Настройки
-              </Button>
+
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -154,10 +146,7 @@ const Profile = () => {
                   </Badge>
                 </div>
               </div>
-              <Button variant="outline" onClick={() => navigate("/settings")}>
-                <Icon name="Settings" className="mr-2" size={16} />
-                Редактировать
-              </Button>
+
             </div>
           </CardContent>
         </Card>

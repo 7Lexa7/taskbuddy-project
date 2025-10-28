@@ -8,8 +8,39 @@ Returns: HTTP response dict with goals data
 import json
 import os
 import psycopg2
+import requests
 from typing import Dict, Any, Optional, List
 from datetime import datetime
+
+def send_telegram_notification(user_id: int, message: str):
+    """Send Telegram notification to user if they have chat_id"""
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    try:
+        cur.execute(
+            """SELECT u.telegram_chat_id, s.telegram_notifications
+               FROM users u
+               LEFT JOIN user_settings s ON u.id = s.user_id
+               WHERE u.id = %s""",
+            (user_id,)
+        )
+        result = cur.fetchone()
+        
+        if result and result[0] and result[1]:
+            chat_id = result[0]
+            bot_token = os.environ.get('TELEGRAM_BOT_TOKEN', '')
+            
+            if bot_token:
+                url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+                requests.post(url, json={
+                    'chat_id': chat_id,
+                    'text': message,
+                    'parse_mode': 'HTML'
+                })
+    finally:
+        cur.close()
+        conn.close()
 
 def create_notification(user_id: int, title: str, message: str, notif_type: str):
     """Helper function to create notification for user"""
@@ -175,6 +206,11 @@ def create_goal(event: Dict[str, Any], user_id: int) -> Dict[str, Any]:
             'Новая задача добавлена',
             f'Задача "{title}" успешно создана',
             'task_created'
+        )
+        
+        send_telegram_notification(
+            user_id,
+            f'✅ <b>Новая задача добавлена</b>\n\n📋 {title}\n⏰ Дедлайн: {end_date if end_date else "не указан"}'
         )
         
         goal = {
