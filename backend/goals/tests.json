@@ -1,0 +1,34 @@
+{
+  "tests": [
+    {
+      "name": "Get user goals",
+      "method": "GET",
+      "path": "/",
+      "headers": {
+        "X-Auth-Token": "test-token"
+      },
+      "expectedStatus": 200
+    },
+    {
+      "name": "Create new goal",
+      "method": "POST",
+      "path": "/",
+      "headers": {
+        "X-Auth-Token": "test-token"
+      },
+      "body": {
+        "title": "Test Goal",
+        "description": "Test description",
+        "category": "health",
+        "priority": "high"
+      },
+      "expectedStatus": 201,
+      "expectedBody": {
+        "goal": {
+          "title": "string"
+        }
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

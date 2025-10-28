@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,18 +9,45 @@ import Icon from '@/components/ui/icon';
 
 const Register = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (password !== confirmPassword) {
-      alert('Пароли не совпадают');
+      toast({
+        title: 'Ошибка',
+        description: 'Пароли не совпадают',
+        variant: 'destructive',
+      });
       return;
     }
-    navigate('/app');
+
+    setLoading(true);
+
+    try {
+      const { register, saveAuthData } = await import('@/lib/auth');
+      const { user, token } = await register(email, password, name);
+      saveAuthData(user, token);
+      toast({
+        title: 'Регистрация успешна',
+        description: `Добро пожаловать, ${user.username}!`,
+      });
+      navigate('/app');
+    } catch (error) {
+      toast({
+        title: 'Ошибка регистрации',
+        description: error instanceof Error ? error.message : 'Попробуйте ещё раз',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -82,8 +110,8 @@ const Register = () => {
                 minLength={6}
               />
             </div>
-            <Button type="submit" className="w-full" size="lg">
-              Зарегистрироваться
+            <Button type="submit" className="w-full" size="lg" disabled={loading}>
+              {loading ? 'Регистрация...' : 'Зарегистрироваться'}
             </Button>
           </form>
 

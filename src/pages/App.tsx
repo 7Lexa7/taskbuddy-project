@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,6 +13,8 @@ import EditTaskDialog from '@/components/EditTaskDialog';
 import DeleteTaskDialog from '@/components/DeleteTaskDialog';
 import TaskMenu from '@/components/TaskMenu';
 import { useToast } from '@/hooks/use-toast';
+import { getGoals, createGoal, updateGoal, deleteGoal, Goal } from '@/lib/goals';
+import { getAuthData, logout } from '@/lib/auth';
 
 interface Task {
   id: string;
@@ -38,53 +40,40 @@ const AppPage = () => {
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   
-  const [tasks, setTasks] = useState<Task[]>([
-    {
-      id: '1',
-      title: 'Подготовить презентацию по математике',
-      category: 'study',
-      priority: 'high',
-      completed: false,
-      dueDate: '2025-10-14',
-      mode: 'study'
-    },
-    {
-      id: '2',
-      title: 'Закончить UI дизайн проекта',
-      category: 'projects',
-      priority: 'high',
-      completed: false,
-      dueDate: '2025-10-15',
-      mode: 'personal'
-    },
-    {
-      id: '3',
-      title: 'Выучить 20 английских слов',
-      category: 'study',
-      priority: 'medium',
-      completed: true,
-      dueDate: '2025-10-13',
-      mode: 'study'
-    },
-    {
-      id: '4',
-      title: 'Записаться к стоматологу',
-      category: 'personal',
-      priority: 'medium',
-      completed: false,
-      dueDate: '2025-10-16',
-      mode: 'personal'
-    },
-    {
-      id: '5',
-      title: 'Сдать лабораторную работу по физике',
-      category: 'study',
-      priority: 'high',
-      completed: false,
-      dueDate: '2025-10-14',
-      mode: 'study'
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { user } = getAuthData();
+
+  useEffect(() => {
+    loadGoals();
+  }, []);
+
+  const loadGoals = async () => {
+    try {
+      setLoading(true);
+      const goals = await getGoals();
+      const mappedTasks: Task[] = goals
+        .filter(goal => goal.status !== 'deleted')
+        .map(goal => ({
+          id: goal.id.toString(),
+          title: goal.title,
+          category: (goal.category || 'personal') as Task['category'],
+          priority: (goal.priority || 'medium') as Task['priority'],
+          completed: goal.status === 'completed',
+          dueDate: goal.endDate || new Date().toISOString().split('T')[0],
+          mode: 'personal' as Task['mode']
+        }));
+      setTasks(mappedTasks);
+    } catch (error) {
+      toast({
+        title: 'Ошибка загрузки',
+        description: 'Не удалось загрузить задачи',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
     }
-  ]);
+  };
 
   const categoryConfig = {
     work: { label: 'Работа', icon: 'Briefcase' as const },
@@ -113,13 +102,28 @@ const AppPage = () => {
   const totalTasks = allModeTasks.length;
   const completionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
 
-  const toggleTask = (id: string) => {
-    setTasks(tasks.map(task => 
-      task.id === id ? { ...task, completed: !task.completed } : task
-    ));
+  const toggleTask = async (id: string) => {
+    const task = tasks.find(t => t.id === id);
+    if (!task) return;
+    
+    try {
+      await updateGoal({
+        id: parseInt(id),
+        status: task.completed ? 'pending' : 'completed'
+      });
+      setTasks(tasks.map(t => 
+        t.id === id ? { ...t, completed: !t.completed } : t
+      ));
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось обновить задачу',
+        variant: 'destructive'
+      });
+    }
   };
 
-  const handleAddTask = (newTask: {
+  const handleAddTask = async (newTask: {
     title: string;
     category: string;
     priority: string;
@@ -127,39 +131,83 @@ const AppPage = () => {
     description: string;
     mode: string;
   }) => {
-    const task: Task = {
-      id: Date.now().toString(),
-      title: newTask.title,
-      category: newTask.category as Task['category'],
-      priority: newTask.priority as Task['priority'],
-      completed: false,
-      dueDate: newTask.dueDate.toISOString().split('T')[0],
-      mode: newTask.mode as Task['mode']
-    };
-    setTasks([...tasks, task]);
-    toast({
-      title: 'Задача создана! 🎉',
-      description: `"${task.title}" добавлена в ${task.mode === 'personal' ? 'Личные цели' : 'Учёбу'}`,
-    });
-  };
-
-  const handleEditTask = (updatedTask: Task) => {
-    setTasks(tasks.map(task => task.id === updatedTask.id ? updatedTask : task));
-    toast({
-      title: 'Задача обновлена! ✏️',
-      description: `"${updatedTask.title}" успешно изменена`,
-    });
-  };
-
-  const handleDeleteTask = () => {
-    if (selectedTask) {
-      setTasks(tasks.filter(task => task.id !== selectedTask.id));
-      toast({
-        title: 'Задача удалена 🗑️',
-        description: `"${selectedTask.title}" удалена из списка`,
+    try {
+      const goal = await createGoal({
+        title: newTask.title,
+        description: newTask.description,
+        category: newTask.category,
+        priority: newTask.priority,
+        endDate: newTask.dueDate.toISOString().split('T')[0],
+        status: 'pending'
       });
-      setDeleteDialogOpen(false);
-      setSelectedTask(null);
+      
+      const task: Task = {
+        id: goal.id.toString(),
+        title: goal.title,
+        category: goal.category as Task['category'],
+        priority: goal.priority as Task['priority'],
+        completed: false,
+        dueDate: goal.endDate || new Date().toISOString().split('T')[0],
+        mode: 'personal' as Task['mode']
+      };
+      
+      setTasks([...tasks, task]);
+      toast({
+        title: 'Задача создана! 🎉',
+        description: `"${task.title}" добавлена`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось создать задачу',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleEditTask = async (updatedTask: Task) => {
+    try {
+      await updateGoal({
+        id: parseInt(updatedTask.id),
+        title: updatedTask.title,
+        category: updatedTask.category,
+        priority: updatedTask.priority,
+        endDate: updatedTask.dueDate,
+        status: updatedTask.completed ? 'completed' : 'pending'
+      });
+      
+      setTasks(tasks.map(task => task.id === updatedTask.id ? updatedTask : task));
+      toast({
+        title: 'Задача обновлена! ✏️',
+        description: `"${updatedTask.title}" успешно изменена`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось обновить задачу',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleDeleteTask = async () => {
+    if (selectedTask) {
+      try {
+        await deleteGoal(parseInt(selectedTask.id));
+        setTasks(tasks.filter(task => task.id !== selectedTask.id));
+        toast({
+          title: 'Задача удалена 🗑️',
+          description: `"${selectedTask.title}" удалена из списка`,
+        });
+        setDeleteDialogOpen(false);
+        setSelectedTask(null);
+      } catch (error) {
+        toast({
+          title: 'Ошибка',
+          description: 'Не удалось удалить задачу',
+          variant: 'destructive'
+        });
+      }
     }
   };
 
@@ -223,6 +271,17 @@ const AppPage = () => {
             <Button variant="ghost" size="icon" onClick={() => navigate('/profile')}>
               <Icon name="User" size={18} />
             </Button>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => {
+                logout();
+                navigate('/login');
+              }}
+              title="Выйти"
+            >
+              <Icon name="LogOut" size={18} />
+            </Button>
           </div>
         </div>
       </nav>
@@ -232,7 +291,7 @@ const AppPage = () => {
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-3xl md:text-4xl font-bold mb-2 flex items-center gap-3">
-                Привет! <span className="animate-bounce">👋</span>
+                Привет, {user?.username || 'Друг'}! <span className="animate-bounce">👋</span>
               </h1>
               <p className="text-muted-foreground text-lg">Сегодня отличный день для продуктивности</p>
             </div>

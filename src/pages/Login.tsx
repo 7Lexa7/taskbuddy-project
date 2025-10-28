@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,12 +9,33 @@ import Icon from '@/components/ui/icon';
 
 const Login = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    navigate('/app');
+    setLoading(true);
+
+    try {
+      const { login, saveAuthData } = await import('@/lib/auth');
+      const { user, token } = await login(email, password);
+      saveAuthData(user, token);
+      toast({
+        title: 'Успешный вход',
+        description: `Добро пожаловать, ${user.username}!`,
+      });
+      navigate('/app');
+    } catch (error) {
+      toast({
+        title: 'Ошибка входа',
+        description: error instanceof Error ? error.message : 'Неверный email или пароль',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -52,8 +74,8 @@ const Login = () => {
                 required
               />
             </div>
-            <Button type="submit" className="w-full" size="lg">
-              Войти
+            <Button type="submit" className="w-full" size="lg" disabled={loading}>
+              {loading ? 'Вход...' : 'Войти'}
             </Button>
           </form>
 
