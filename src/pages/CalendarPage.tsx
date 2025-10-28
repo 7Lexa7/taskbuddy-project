@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +10,7 @@ import EditTaskDialog from '@/components/EditTaskDialog';
 import DeleteTaskDialog from '@/components/DeleteTaskDialog';
 import TaskMenu from '@/components/TaskMenu';
 import { useToast } from '@/hooks/use-toast';
+import { getGoals, createGoal, updateGoal, deleteGoal } from '@/lib/goals';
 
 interface Task {
   id: string;
@@ -34,55 +35,49 @@ const CalendarPage = () => {
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
 
-  const [tasks, setTasks] = useState<Task[]>([
-    {
-      id: '1',
-      title: 'Подготовить презентацию по математике',
-      category: 'study',
-      priority: 'high',
-      completed: false,
-      dueDate: '2025-10-14',
-      mode: 'study'
-    },
-    {
-      id: '2',
-      title: 'Закончить UI дизайн проекта',
-      category: 'projects',
-      priority: 'high',
-      completed: false,
-      dueDate: '2025-10-15',
-      mode: 'personal'
-    },
-    {
-      id: '3',
-      title: 'Выучить 20 английских слов',
-      category: 'study',
-      priority: 'medium',
-      completed: true,
-      dueDate: '2025-10-13',
-      mode: 'study'
-    },
-    {
-      id: '4',
-      title: 'Записаться к стоматологу',
-      category: 'personal',
-      priority: 'medium',
-      completed: false,
-      dueDate: '2025-10-16',
-      mode: 'personal'
-    },
-    {
-      id: '5',
-      title: 'Сдать лабораторную работу по физике',
-      category: 'study',
-      priority: 'high',
-      completed: false,
-      dueDate: '2025-10-14',
-      mode: 'study'
-    }
-  ]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleAddTask = (newTask: {
+  useEffect(() => {
+    loadGoals();
+  }, []);
+
+  const loadGoals = async () => {
+    try {
+      setLoading(true);
+      const goals = await getGoals();
+      const validCategories = ['work', 'study', 'home', 'personal', 'projects'];
+      const validPriorities = ['high', 'medium', 'low'];
+      
+      const mappedTasks: Task[] = goals
+        .filter(goal => goal.status !== 'deleted')
+        .map(goal => {
+          const category = validCategories.includes(goal.category) ? goal.category : 'personal';
+          const priority = validPriorities.includes(goal.priority) ? goal.priority : 'medium';
+          
+          return {
+            id: goal.id.toString(),
+            title: goal.title,
+            category: category as Task['category'],
+            priority: priority as Task['priority'],
+            completed: goal.status === 'completed',
+            dueDate: goal.endDate || new Date().toISOString().split('T')[0],
+            mode: 'personal' as Task['mode']
+          };
+        });
+      setTasks(mappedTasks);
+    } catch (error) {
+      toast({
+        title: 'Ошибка загрузки',
+        description: 'Не удалось загрузить задачи',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddTask = async (newTask: {
     title: string;
     category: string;
     priority: string;
@@ -90,46 +85,96 @@ const CalendarPage = () => {
     description: string;
     mode: string;
   }) => {
-    const task: Task = {
-      id: Date.now().toString(),
-      title: newTask.title,
-      category: newTask.category as Task['category'],
-      priority: newTask.priority as Task['priority'],
-      completed: false,
-      dueDate: newTask.dueDate.toISOString().split('T')[0],
-      mode: newTask.mode as Task['mode']
-    };
-    setTasks([...tasks, task]);
-    toast({
-      title: 'Задача создана! 🎉',
-      description: `"${task.title}" добавлена на ${new Date(task.dueDate).toLocaleDateString('ru-RU')}`,
-    });
-  };
-
-  const handleEditTask = (updatedTask: Task) => {
-    setTasks(tasks.map(task => task.id === updatedTask.id ? updatedTask : task));
-    toast({
-      title: 'Задача обновлена! ✏️',
-      description: `"${updatedTask.title}" успешно изменена`,
-    });
-  };
-
-  const handleDeleteTask = () => {
-    if (selectedTask) {
-      setTasks(tasks.filter(task => task.id !== selectedTask.id));
-      toast({
-        title: 'Задача удалена 🗑️',
-        description: `"${selectedTask.title}" удалена из списка`,
+    try {
+      const goal = await createGoal({
+        title: newTask.title,
+        description: newTask.description,
+        category: newTask.category,
+        priority: newTask.priority,
+        endDate: newTask.dueDate.toISOString().split('T')[0],
+        status: 'pending'
       });
-      setDeleteDialogOpen(false);
-      setSelectedTask(null);
+      
+      await loadGoals();
+      
+      toast({
+        title: 'Задача создана! 🎉',
+        description: `"${goal.title}" добавлена на ${new Date(goal.endDate || '').toLocaleDateString('ru-RU')}`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось создать задачу',
+        variant: 'destructive'
+      });
     }
   };
 
-  const toggleTask = (id: string) => {
-    setTasks(tasks.map(task => 
-      task.id === id ? { ...task, completed: !task.completed } : task
-    ));
+  const handleEditTask = async (updatedTask: Task) => {
+    try {
+      await updateGoal({
+        id: parseInt(updatedTask.id),
+        title: updatedTask.title,
+        category: updatedTask.category,
+        priority: updatedTask.priority,
+        endDate: updatedTask.dueDate,
+        status: updatedTask.completed ? 'completed' : 'pending'
+      });
+      
+      await loadGoals();
+      
+      toast({
+        title: 'Задача обновлена! ✏️',
+        description: `"${updatedTask.title}" успешно изменена`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось обновить задачу',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleDeleteTask = async () => {
+    if (selectedTask) {
+      try {
+        await deleteGoal(parseInt(selectedTask.id));
+        await loadGoals();
+        
+        toast({
+          title: 'Задача удалена 🗑️',
+          description: `"${selectedTask.title}" удалена из списка`,
+        });
+        setDeleteDialogOpen(false);
+        setSelectedTask(null);
+      } catch (error) {
+        toast({
+          title: 'Ошибка',
+          description: 'Не удалось удалить задачу',
+          variant: 'destructive'
+        });
+      }
+    }
+  };
+
+  const toggleTask = async (id: string) => {
+    const task = tasks.find(t => t.id === id);
+    if (!task) return;
+    
+    try {
+      await updateGoal({
+        id: parseInt(id),
+        status: task.completed ? 'pending' : 'completed'
+      });
+      await loadGoals();
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось обновить задачу',
+        variant: 'destructive'
+      });
+    }
   };
 
   const openEditDialog = (task: Task) => {

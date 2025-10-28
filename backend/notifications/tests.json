@@ -1,0 +1,13 @@
+{
+  "tests": [
+    {
+      "name": "Get user notifications",
+      "method": "GET",
+      "path": "/",
+      "headers": {
+        "X-Auth-Token": "test-token"
+      },
+      "expectedStatus": 200
+    }
+  ]
+}

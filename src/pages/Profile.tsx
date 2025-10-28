@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -6,18 +7,46 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import Icon from '@/components/ui/icon';
 import { Separator } from '@/components/ui/separator';
+import { getProfile, Profile as ProfileData } from '@/lib/profile';
+import { getAuthData, logout } from '@/lib/auth';
+import { useToast } from '@/hooks/use-toast';
 
 const Profile = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const { user } = getAuthData();
+
+  useEffect(() => {
+    loadProfile();
+  }, []);
+
+  const loadProfile = async () => {
+    try {
+      setLoading(true);
+      const data = await getProfile();
+      setProfile(data);
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось загрузить профиль',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const stats = {
-    totalTasks: 47,
-    completedTasks: 32,
-    streakDays: 12,
+    totalTasks: profile?.stats?.totalGoals || 0,
+    completedTasks: profile?.stats?.completedGoals || 0,
+    streakDays: 0,
     categoriesUsed: 5
   };
 
-  const completionRate = (stats.completedTasks / stats.totalTasks) * 100;
+  const completionRate = stats.totalTasks > 0 ? (stats.completedTasks / stats.totalTasks) * 100 : 0;
+  const initials = (profile?.username || user?.username || 'U').slice(0, 2).toUpperCase();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50/30 via-background to-purple-50/30">
@@ -62,14 +91,14 @@ const Profile = () => {
           <CardContent className="pt-6">
             <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
               <Avatar className="w-24 h-24">
-                <AvatarImage src="" />
+                <AvatarImage src={profile?.avatarUrl || ''} />
                 <AvatarFallback className="text-2xl bg-gradient-to-br from-blue-500 to-purple-600 text-white">
-                  АП
+                  {initials}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 text-center md:text-left">
-                <h1 className="text-3xl font-bold mb-2">Александр Петров</h1>
-                <p className="text-muted-foreground mb-4">alex.petrov@example.com</p>
+                <h1 className="text-3xl font-bold mb-2">{profile?.username || user?.username || 'Пользователь'}</h1>
+                <p className="text-muted-foreground mb-4">{profile?.email || user?.email || ''}</p>
                 <div className="flex flex-wrap gap-2 justify-center md:justify-start">
                   <Badge variant="secondary" className="gap-1">
                     <Icon name="Target" size={14} />

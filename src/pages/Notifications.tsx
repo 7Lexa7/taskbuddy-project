@@ -1,80 +1,81 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Icon from '@/components/ui/icon';
+import { getNotifications, markAsRead as markAsReadAPI, Notification as APINotification } from '@/lib/notifications';
+import { useToast } from '@/hooks/use-toast';
 
 interface Notification {
-  id: string;
-  type: 'reminder' | 'deadline' | 'achievement' | 'system';
+  id: number;
+  type: string;
   title: string;
   message: string;
-  time: string;
-  read: boolean;
+  createdAt: string;
+  isRead: boolean;
 }
 
 const Notifications = () => {
   const navigate = useNavigate();
-  const [notifications, setNotifications] = useState<Notification[]>([
-    {
-      id: '1',
-      type: 'deadline',
-      title: 'Скоро дедлайн',
-      message: 'Задача "Подготовить презентацию по математике" завтра!',
-      time: '2 часа назад',
-      read: false
-    },
-    {
-      id: '2',
-      type: 'reminder',
-      title: 'Напоминание',
-      message: 'Не забудьте выполнить задачу "Записаться к стоматологу"',
-      time: '5 часов назад',
-      read: false
-    },
-    {
-      id: '3',
-      type: 'achievement',
-      title: 'Достижение разблокировано! 🏆',
-      message: 'Вы получили награду "Огненная серия" за 12 дней подряд',
-      time: '1 день назад',
-      read: true
-    },
-    {
-      id: '4',
-      type: 'deadline',
-      title: 'Срочно',
-      message: 'Задача "Сдать лабораторную работу по физике" сегодня!',
-      time: '3 часа назад',
-      read: false
-    },
-    {
-      id: '5',
-      type: 'system',
-      title: 'Обновление TaskBuddy',
-      message: 'Появились новые возможности календаря',
-      time: '2 дня назад',
-      read: true
+  const { toast } = useToast();
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadNotifications();
+  }, []);
+
+  const loadNotifications = async () => {
+    try {
+      setLoading(true);
+      const data = await getNotifications();
+      setNotifications(data.notifications);
+      setUnreadCount(data.unreadCount);
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось загрузить уведомления',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
     }
-  ]);
-
-  const markAsRead = (id: string) => {
-    setNotifications(notifications.map(notif =>
-      notif.id === id ? { ...notif, read: true } : notif
-    ));
   };
 
-  const markAllAsRead = () => {
-    setNotifications(notifications.map(notif => ({ ...notif, read: true })));
+  const markAsRead = async (id: number) => {
+    try {
+      await markAsReadAPI(id);
+      await loadNotifications();
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось отметить как прочитанное',
+        variant: 'destructive'
+      });
+    }
   };
 
-  const deleteNotification = (id: string) => {
-    setNotifications(notifications.filter(notif => notif.id !== id));
+  const markAllAsRead = async () => {
+    try {
+      for (const notif of notifications.filter(n => !n.isRead)) {
+        await markAsReadAPI(notif.id);
+      }
+      await loadNotifications();
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось отметить все как прочитанные',
+        variant: 'destructive'
+      });
+    }
   };
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const deleteNotification = async (id: number) => {
+    await markAsRead(id);
+  };
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -85,14 +86,29 @@ const Notifications = () => {
       case 'achievement':
         return { icon: 'Trophy' as const, color: 'text-yellow-600' };
       case 'system':
+      case 'success':
         return { icon: 'Info' as const, color: 'text-purple-600' };
       default:
         return { icon: 'Bell' as const, color: 'text-gray-600' };
     }
   };
 
-  const unreadNotifications = notifications.filter(n => !n.read);
-  const readNotifications = notifications.filter(n => n.read);
+  const getTimeAgo = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    
+    if (days > 0) return `${days} ${days === 1 ? 'день' : 'дня'} назад`;
+    if (hours > 0) return `${hours} ${hours === 1 ? 'час' : 'часа'} назад`;
+    if (minutes > 0) return `${minutes} ${minutes === 1 ? 'минуту' : 'минут'} назад`;
+    return 'Только что';
+  };
+
+  const unreadNotifications = notifications.filter(n => !n.isRead);
+  const readNotifications = notifications.filter(n => n.isRead);
 
   return (
     <div className="min-h-screen bg-background">
@@ -175,7 +191,7 @@ const Notifications = () => {
               notifications.map(notification => {
                 const { icon, color } = getNotificationIcon(notification.type);
                 return (
-                  <Card key={notification.id} className={notification.read ? 'opacity-60' : 'border-2'}>
+                  <Card key={notification.id} className={notification.isRead ? 'opacity-60' : 'border-2'}>
                     <CardContent className="p-4">
                       <div className="flex gap-4">
                         <div className={`mt-1 ${color}`}>
@@ -184,15 +200,15 @@ const Notifications = () => {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2 mb-2">
                             <h3 className="font-semibold">{notification.title}</h3>
-                            {!notification.read && (
+                            {!notification.isRead && (
                               <Badge variant="default" className="shrink-0">Новое</Badge>
                             )}
                           </div>
                           <p className="text-sm text-muted-foreground mb-2">{notification.message}</p>
-                          <p className="text-xs text-muted-foreground">{notification.time}</p>
+                          <p className="text-xs text-muted-foreground">{getTimeAgo(notification.createdAt)}</p>
                         </div>
                         <div className="flex gap-1">
-                          {!notification.read && (
+                          {!notification.isRead && (
                             <Button
                               variant="ghost"
                               size="icon"
@@ -241,7 +257,7 @@ const Notifications = () => {
                             <Badge variant="default" className="shrink-0">Новое</Badge>
                           </div>
                           <p className="text-sm text-muted-foreground mb-2">{notification.message}</p>
-                          <p className="text-xs text-muted-foreground">{notification.time}</p>
+                          <p className="text-xs text-muted-foreground">{getTimeAgo(notification.createdAt)}</p>
                         </div>
                         <div className="flex gap-1">
                           <Button
@@ -288,7 +304,7 @@ const Notifications = () => {
                         <div className="flex-1 min-w-0">
                           <h3 className="font-semibold mb-2">{notification.title}</h3>
                           <p className="text-sm text-muted-foreground mb-2">{notification.message}</p>
-                          <p className="text-xs text-muted-foreground">{notification.time}</p>
+                          <p className="text-xs text-muted-foreground">{getTimeAgo(notification.createdAt)}</p>
                         </div>
                         <Button
                           variant="ghost"

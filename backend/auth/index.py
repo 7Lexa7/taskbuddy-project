@@ -84,6 +84,13 @@ def register_user(event: Dict[str, Any]) -> Dict[str, Any]:
             (email, password_hash, username)
         )
         user = cur.fetchone()
+        user_id = user[0]
+        
+        cur.execute(
+            "INSERT INTO notifications (user_id, title, message, type) VALUES (%s, %s, %s, %s)",
+            (user_id, 'Добро пожаловать в TaskBuddy!', 'Вы успешно зарегистрировались. Начните создавать свои первые задачи!', 'success')
+        )
+        
         conn.commit()
         
         token = generate_token()
