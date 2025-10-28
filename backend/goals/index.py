@@ -19,7 +19,7 @@ def send_telegram_notification(user_id: int, message: str):
     
     try:
         cur.execute(
-            """SELECT u.telegram_chat_id, s.telegram_notifications
+            """SELECT u.telegram_chat_id, COALESCE(s.telegram_notifications, TRUE) as tg_enabled
                FROM users u
                LEFT JOIN user_settings s ON u.id = s.user_id
                WHERE u.id = %s""",
@@ -27,17 +27,23 @@ def send_telegram_notification(user_id: int, message: str):
         )
         result = cur.fetchone()
         
-        if result and result[0] and result[1]:
+        if result and result[0]:
             chat_id = result[0]
-            bot_token = os.environ.get('TELEGRAM_BOT_TOKEN', '')
+            tg_enabled = result[1]
             
-            if bot_token:
-                url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-                requests.post(url, json={
-                    'chat_id': chat_id,
-                    'text': message,
-                    'parse_mode': 'HTML'
-                })
+            if tg_enabled:
+                bot_token = os.environ.get('TELEGRAM_BOT_TOKEN', '')
+                
+                if bot_token:
+                    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+                    try:
+                        requests.post(url, json={
+                            'chat_id': chat_id,
+                            'text': message,
+                            'parse_mode': 'HTML'
+                        }, timeout=5)
+                    except Exception:
+                        pass
     finally:
         cur.close()
         conn.close()

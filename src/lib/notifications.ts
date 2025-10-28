@@ -10,7 +10,7 @@ export interface Notification {
 }
 
 const getAuthHeaders = () => {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('authToken');
   return {
     'Content-Type': 'application/json',
     'X-Auth-Token': token || '',

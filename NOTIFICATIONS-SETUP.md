@@ -2,21 +2,25 @@
 
 ## 1. Настройка Telegram бота
 
-### Шаг 1: Получить токен бота
-1. Найти @BotFather в Telegram
-2. Создать бота командой /newbot
-3. Сохранить полученный токен в секреты проекта как TELEGRAM_BOT_TOKEN
+### ✅ Токен бота уже настроен
+Секрет TELEGRAM_BOT_TOKEN уже добавлен в проект.
 
-### Шаг 2: Установка вебхука
-Выполните в браузере (замените YOUR_BOT_TOKEN):
+### Шаг 1: Установка вебхука
+Выполните в браузере (используя токен из секретов):
 ```
-https://api.telegram.org/botYOUR_BOT_TOKEN/setWebhook?url=https://functions.poehali.dev/56ae3126-ff54-4116-b337-0d24caaf1ab1
+https://api.telegram.org/bot<ВАШ_ТОКЕН>/setWebhook?url=https://functions.poehali.dev/56ae3126-ff54-4116-b337-0d24caaf1ab1
 ```
 
-### Шаг 3: Проверка вебхука
+### Шаг 2: Проверка вебхука
 ```
-https://api.telegram.org/botYOUR_BOT_TOKEN/getWebhookInfo
+https://api.telegram.org/bot<ВАШ_ТОКЕН>/getWebhookInfo
 ```
+
+### Шаг 3: Подключение пользователя
+1. Пользователь нажимает "Подключить Telegram" в профиле
+2. Открывается бот и пользователь нажимает /start
+3. Бот сохраняет telegram_chat_id в базу
+4. Готово! Уведомления будут приходить автоматически
 
 ## 2. Как работает система уведомлений
 
