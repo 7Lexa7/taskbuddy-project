@@ -181,21 +181,31 @@ const Notifications = () => {
           )}
         </div>
 
-        <Tabs defaultValue="all" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-6">
-            <TabsTrigger value="all">
-              Все ({notifications.length})
-            </TabsTrigger>
-            <TabsTrigger value="unread">
-              Непрочитанные ({unreadCount})
-            </TabsTrigger>
-            <TabsTrigger value="read">
-              Прочитанные ({readNotifications.length})
-            </TabsTrigger>
-          </TabsList>
+        {loading ? (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <div className="flex flex-col items-center gap-4">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                <p className="text-muted-foreground">Загрузка уведомлений...</p>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Tabs defaultValue="all" className="w-full">
+            <TabsList className="grid w-full grid-cols-3 mb-6">
+              <TabsTrigger value="all">
+                Все ({notifications.length})
+              </TabsTrigger>
+              <TabsTrigger value="unread">
+                Непрочитанные ({unreadCount})
+              </TabsTrigger>
+              <TabsTrigger value="read">
+                Прочитанные ({readNotifications.length})
+              </TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="all" className="space-y-4">
-            {notifications.length === 0 ? (
+            <TabsContent value="all" className="space-y-4">
+              {notifications.length === 0 ? (
               <Card>
                 <CardContent className="py-12 text-center">
                   <Icon name="Bell" size={48} className="mx-auto mb-4 opacity-50" />
@@ -335,7 +345,8 @@ const Notifications = () => {
               })
             )}
           </TabsContent>
-        </Tabs>
+          </Tabs>
+        )}
       </div>
     </div>
   );
