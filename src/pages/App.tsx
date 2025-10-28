@@ -61,6 +61,8 @@ const AppPage = () => {
           const category = validCategories.includes(goal.category) ? goal.category : 'personal';
           const priority = validPriorities.includes(goal.priority) ? goal.priority : 'medium';
           
+          const mode = category === 'study' ? 'study' : 'personal';
+          
           return {
             id: goal.id.toString(),
             title: goal.title,
@@ -68,7 +70,7 @@ const AppPage = () => {
             priority: priority as Task['priority'],
             completed: goal.status === 'completed',
             dueDate: goal.endDate || new Date().toISOString().split('T')[0],
-            mode: 'personal' as Task['mode']
+            mode: mode as Task['mode']
           };
         });
       setTasks(mappedTasks);
@@ -239,7 +241,10 @@ const AppPage = () => {
   };
 
   const getTasksForDate = (date: Date) => {
-    const dateStr = date.toISOString().split('T')[0];
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
     return tasks.filter(task => task.dueDate === dateStr);
   };
 
